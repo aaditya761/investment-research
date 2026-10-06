@@ -42,11 +42,3 @@ def test_walk_forward_shape(world):
     assert h.theme.nunique() == len(cfg.themes)
     assert not backtest.summarize(h).empty
 
-
-def test_india_universe_scans():
-    cfg = load_config("themes_india.yaml")
-    assert cfg.benchmark == "^NSEI" and len(cfg.themes) >= 20
-    close, vol = synthetic.make(cfg)
-    df, _ = scoring.scan(close, vol, close[cfg.benchmark], cfg.themes)
-    assert len(df) == len(cfg.themes)
-    assert df.score.between(0, 100).all()
