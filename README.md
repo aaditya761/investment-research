@@ -3,16 +3,35 @@
 Ranks global themes (crypto, gold, East Asia, hyperscalers, memory, power, ...) by how likely they are to be
 prepping for a bull run. Each theme is a basket of ETF proxies plus individual stocks defined in `themes.yaml`.
 
-## Run
+## Commands
+
+Global options go **before** the subcommand: `--themes FILE`, `--demo`, `--offline`, `--refresh`, `--start DATE`, `--cache DIR`, `--csv OUT`.
 
     pip install -r requirements.txt
-    python -m themescan scan                       # today's ranking (downloads + caches prices in data/cache)
-    python -m themescan scan --detail memory       # ticker-level view of one theme
-    python -m themescan scan --asof 2025-01-15     # what did it look like then?
-    python -m themescan backtest --bt-start 2020-01-01
-    python -m themescan --demo scan                # synthetic data, no network
-    python -m themescan --themes themes_india.yaml scan   # India sectors vs Nifty 50
-    pytest
+    pytest                                                     # 8 tests, no network needed
+
+    # 1. Rank themes (downloads + caches prices in data/cache on first run)
+    python -m themescan scan                                   # global themes (themes.yaml)
+    python -m themescan scan --detail memory                   # ticker-level view of one theme
+    python -m themescan scan --asof 2025-01-15                 # what it looked like on a past date
+    python -m themescan scan --csv out.csv                     # save the table
+    python -m themescan --themes themes_india.yaml scan        # India sectors vs Nifty 50
+    python -m themescan --demo scan                            # synthetic data, no network
+
+    # 2. Fundamentals and news (context for the scan)
+    python -m themescan altfetch                               # download earnings, analyst and news history (slow: news is rate-limited)
+    python -m themescan altfetch --skip-news                   # earnings + analyst only (fast, enough for `confirmed`)
+    python -m themescan fundamentals --theme memory japan      # live P/E, growth, estimate revisions
+    python -m themescan headlines                              # live headlines for every Leading theme
+    python -m themescan headlines --theme brazil --n 8         # headlines for chosen themes
+
+    # 3. Validate / re-tune (slow: a few minutes each)
+    python -m themescan --csv data/hist_global.csv backtest --bt-start 2019-06-01 --step 5
+    python -m themescan --themes themes_india.yaml --csv data/hist_india.csv backtest --bt-start 2019-06-01 --step 5
+    python -m themescan research data/hist_global.csv --validate data/hist_india.csv
+
+Typical routine: `scan` (add `--detail` for any theme you care about) -> `headlines` for the Leading ones -> `fundamentals` for valuation.
+Re-run `backtest` + `research` after changing themes or scoring.
 
 ## How it scores (0-100, percentile-ranked across themes)
 
