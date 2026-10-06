@@ -147,6 +147,12 @@ def cmd_fundamentals(args):
     print(pd.DataFrame.from_dict(rows, orient="index").round(1).sort_values("rev_balance", ascending=False).to_string())
 
 
+def cmd_ui(args):
+    from . import ui
+
+    ui.serve(args.port, not args.no_browser)
+
+
 def main(argv=None):
     warnings.filterwarnings("ignore")
     p = argparse.ArgumentParser(prog="themescan")
@@ -173,6 +179,10 @@ def main(argv=None):
     f.add_argument("--skip-news", action="store_true")
     f.add_argument("--skip-analyst", action="store_true")
     f.set_defaults(fn=cmd_altfetch)
+    u = sub.add_parser("ui", help="open the point-and-click web UI")
+    u.add_argument("--port", type=int, default=8765)
+    u.add_argument("--no-browser", action="store_true")
+    u.set_defaults(fn=cmd_ui)
     fu = sub.add_parser("fundamentals", help="live valuation/growth/estimate-revision snapshot per theme")
     fu.add_argument("--theme", nargs="*")
     fu.set_defaults(fn=cmd_fundamentals)

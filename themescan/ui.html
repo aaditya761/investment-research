@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Themescan</title>
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#fff; --text:#1b1f27; --muted:#667085; --line:#e4e7ec; --accent:#2f5bea; --accent-ink:#fff;
+  --good:#117a46; --good-bg:#dff5e8; --warn:#8a5a00; --warn-bg:#fdf0d2; --bad:#b42318; --bad-bg:#fde4e1;
+  --info:#1f4fb4; --info-bg:#e1ebfd; --neutral:#475467; --neutral-bg:#eceff3; --code-bg:#101828; --code-ink:#d7e0ee;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1218; --surface:#171b23; --text:#e7eaf0; --muted:#98a2b3; --line:#2a303c; --accent:#6d8dff; --accent-ink:#0b0f1a;
+    --good:#58d68d; --good-bg:#12301f; --warn:#f0c15a; --warn-bg:#3a2d0c; --bad:#ff8a80; --bad-bg:#3b1a17;
+    --info:#8fb0ff; --info-bg:#17274d; --neutral:#aab3c2; --neutral-bg:#232936; --code-bg:#0a0d13; --code-ink:#cbd5e5;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:var(--surface);border-bottom:1px solid var(--line);padding:12px 16px;position:sticky;top:0;z-index:5}
+.bar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;max-width:1400px;margin:0 auto}
+h1{font-size:17px;margin:0 8px 0 0;letter-spacing:.2px}
+label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+select,input[type=date],input[type=number]{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:7px 12px;border-radius:7px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button:disabled{opacity:.55;cursor:not-allowed}
+main{max-width:1400px;margin:0 auto;padding:16px}
+.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.tab{padding:8px 14px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--muted)}
+.tab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+.panel{display:none}.panel.on{display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:center}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.meta{color:var(--muted);font-size:13px;margin:0 0 10px}
+.note{background:var(--warn-bg);color:var(--warn);padding:8px 12px;border-radius:7px;margin-bottom:10px;font-size:13px}
+.err{background:var(--bad-bg);color:var(--bad);padding:8px 12px;border-radius:7px;margin-bottom:10px;white-space:pre-wrap}
+.wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+th{font-size:12px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--surface)}
+th.sorted::after{content:" ▾"} th.sorted.asc::after{content:" ▴"}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--neutral-bg)}
+tr:last-child td{border-bottom:0}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
+.b-Leading{background:var(--good-bg);color:var(--good)}.b-Extended{background:var(--warn-bg);color:var(--warn)}
+.b-Improving{background:var(--info-bg);color:var(--info)}.b-Neutral{background:var(--neutral-bg);color:var(--neutral)}
+.b-Lagging{background:var(--bad-bg);color:var(--bad)}.b-conf{background:var(--good);color:var(--accent-ink)}
+.score{display:inline-flex;align-items:center;gap:8px;min-width:96px;justify-content:flex-end}
+.score i{display:block;height:6px;border-radius:3px;background:var(--accent);opacity:.8}
+.pos{color:var(--good)}.neg{color:var(--bad)}.dim{color:var(--muted)}
+.leaders{max-width:230px;overflow:hidden;text-overflow:ellipsis;text-align:left;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.card h3{margin:0 0 4px;font-size:15px}.card p{margin:0 0 10px;color:var(--muted);font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:10px}
+pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9px;overflow:auto;max-height:520px;margin:0;font:12.5px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+.cmd{font:12px ui-monospace,Menlo,monospace;color:var(--muted);margin:0 0 6px;word-break:break-all}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(760px,100%);background:var(--bg);border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.18);transform:translateX(102%);transition:transform .18s;z-index:10;overflow:auto;padding:16px}
+.drawer.on{transform:none}
+.drawer h2{margin:0 0 4px;font-size:18px}
+.drawer h4{margin:18px 0 8px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.hl{list-style:none;padding:0;margin:0}.hl li{padding:7px 0;border-bottom:1px solid var(--line)}.hl small{color:var(--muted)}
+.x{float:right}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px}
+@keyframes s{to{transform:rotate(360deg)}}
+@media (max-width:640px){main{padding:12px}.bar{gap:8px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Themescan</h1>
+    <label>Universe <select id="universe"></select></label>
+    <label>As of <input type="date" id="asof"></label>
+    <label><input type="checkbox" id="offline"> Cached prices only</label>
+    <label><input type="checkbox" id="demo"> Demo data</label>
+    <button class="primary" id="scanBtn">Scan</button>
+    <span id="status" class="dim"></span>
+  </div>
+</header>
+<main>
+  <div class="tabs">
+    <button class="tab on" data-tab="scan">Scan</button>
+    <button class="tab" data-tab="jobs">Data &amp; jobs</button>
+    <button class="tab" data-tab="help">Help</button>
+  </div>
+
+  <section class="panel on" id="p-scan">
+    <div id="scanErr"></div>
+    <div class="chips" id="filters"></div>
+    <p class="meta" id="scanMeta">Press <b>Scan</b> to rank the themes. The first run downloads prices and can take a minute.</p>
+    <div id="scanNote"></div>
+    <div class="wrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="panel" id="p-jobs">
+    <div class="cards">
+      <div class="card"><h3>1 · Download data</h3><p>Earnings history and analyst actions (needed for the <b>confirmed</b> flag). News history is slow because of rate limits.</p>
+        <div class="row"><label><input type="checkbox" id="j-news"> include news history</label><label><input type="checkbox" id="j-refresh"> force re-download</label></div>
+        <button class="primary" data-job="altfetch">Download data</button></div>
+      <div class="card"><h3>2 · Live fundamentals</h3><p>Forward P/E, growth, upside to analyst targets and estimate revisions for every theme (takes a few minutes).</p>
+        <button class="primary" data-job="fundamentals">Run fundamentals</button></div>
+      <div class="card"><h3>3 · Headlines</h3><p>Latest news for every currently <b>Leading</b> theme, as a catalyst check.</p>
+        <div class="row"><label>Stories per theme <input type="number" id="j-n" value="5" min="1" max="15" style="width:64px"></label></div>
+        <button class="primary" data-job="headlines">Get headlines</button></div>
+      <div class="card"><h3>4 · Backtest</h3><p>Replays the scanner weekly on history for the selected universe and saves the result for research.</p>
+        <div class="row"><label>From <input type="date" id="j-start" value="2019-06-01"></label><label>Step (bars) <input type="number" id="j-step" value="5" min="1" max="60" style="width:64px"></label></div>
+        <button class="primary" data-job="backtest">Run backtest</button></div>
+      <div class="card"><h3>5 · Research</h3><p>Which signals predicted forward returns, with a train/test split. Needs a backtest result.</p>
+        <div class="row"><label>Result <select id="j-hist"></select></label><label>Validate on <select id="j-val"></select></label></div>
+        <button class="primary" data-job="research">Run research</button></div>
+    </div>
+    <p class="cmd" id="jobCmd">&nbsp;</p>
+    <div class="row"><b id="jobTitle">Console</b><span id="jobState" class="dim"></span><button id="cancelBtn" disabled>Cancel</button><button id="clearBtn">Clear</button></div>
+    <pre id="console">Output from jobs appears here.</pre>
+  </section>
+
+  <section class="panel" id="p-help">
+    <div class="card" style="max-width:820px">
+      <h3>How to read this</h3>
+      <p><b>Score (0–100)</b> ranks themes by the rising 200-day trend (50%), relative strength vs the benchmark (30%) and distance above the 200-day average (20%).</p>
+      <p><span class="badge b-Leading">Leading</span> score ≥ 60 · <span class="badge b-Extended">Extended</span> leading but stretched · <span class="badge b-Improving">Improving</span> 40–60 and rising · <span class="badge b-Neutral">Neutral</span> · <span class="badge b-Lagging">Lagging</span> score ≤ 30.</p>
+      <p><span class="badge b-conf">confirmed</span> = Leading and in the top half of themes by EPS surprise over the last 120 days. It was the only add-on that held up out of sample.</p>
+      <p>Backtests show the Leading list is only slightly better than chance and the Lagging list is the most reliable (avoid). It describes what is already trending; it does not predict the next bull run. This is a research screen, not investment advice.</p>
+      <p>Click a theme row to see its tickers, live headlines and a valuation snapshot. Everything here runs on your machine: the page talks only to <code>127.0.0.1</code>.</p>
+    </div>
+  </section>
+</main>
+
+<aside class="drawer" id="drawer">
+  <button class="x" id="closeDrawer">Close ✕</button>
+  <h2 id="dTitle"></h2><div class="meta" id="dMeta"></div>
+  <h4>Tickers</h4><div class="wrap"><table id="dTbl"><thead></thead><tbody></tbody></table></div>
+  <h4>Headlines <button id="hlBtn" style="margin-left:8px;padding:3px 9px">Load</button></h4><div id="dHl" class="dim">Not loaded.</div>
+  <h4>Valuation snapshot <button id="fuBtn" style="margin-left:8px;padding:3px 9px">Load</button></h4><div id="dFu" class="dim">Not loaded.</div>
+</aside>
+
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+let CFG = {}, ROWS = [], FILTER = 'all', SORT = {k:'score', asc:false}, CUR = null, JOB = null, TIMER = null;
+
+async function api(path, body){
+  const r = await fetch(path, body===undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const j = await r.json(); if(!r.ok) throw new Error(j.error || r.statusText); return j;
+}
+const params = () => ({universe:$('#universe').value, asof:$('#asof').value, offline:$('#offline').checked, demo:$('#demo').checked});
+const fmt = (v,d=1,suf='') => v==null ? '<span class="dim">–</span>' : v.toFixed(d)+suf;
+const pct = (v,d=1) => v==null ? '<span class="dim">–</span>' : `<span class="${v>0?'pos':v<0?'neg':''}">${(v*100).toFixed(d)}%</span>`;
+const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// tabs
+$$('.tab').forEach(t => t.onclick = () => { $$('.tab').forEach(x=>x.classList.toggle('on',x===t)); $$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.tab)); });
+
+// scan table
+const COLS = [
+  ['label','Theme','l'],['score','Score'],['accel','4w chg'],['stage','Stage','l'],['rs','Rel. strength'],['r3m','3m'],
+  ['breadth200','>200d'],['ext','Ext. z'],['volr','Vol ×'],['surp','EPS surp %'],['beat','Beats'],['leaders','Leaders','l']
+];
+function renderHead(){
+  const hasF = ROWS.some(r=>'surp' in r);
+  $('#tbl thead').innerHTML = '<tr>' + COLS.filter(c=>hasF||!['surp','beat'].includes(c[0])).map(c=>
+    `<th class="${c[2]||''} ${SORT.k===c[0]?'sorted'+(SORT.asc?' asc':''):''}" data-k="${c[0]}">${c[1]}</th>`).join('') + '</tr>';
+  $$('#tbl th').forEach(th => th.onclick = () => { const k=th.dataset.k; SORT = {k, asc: SORT.k===k ? !SORT.asc : (k==='label'||k==='stage'||k==='leaders')}; renderRows(); });
+}
+function visible(){
+  return ROWS.filter(r => FILTER==='all' ? true : FILTER==='leading' ? r.leading : FILTER==='confirmed' ? r.confirmed : FILTER==='lagging' ? r.stage==='Lagging' : r.stage===FILTER)
+    .sort((a,b)=>{ const x=a[SORT.k], y=b[SORT.k]; const c = (x==null)-(y==null) || (typeof x==='string' ? x.localeCompare(y) : x-y); return SORT.asc ? c : -c; });
+}
+function renderRows(){
+  renderHead(); const hasF = ROWS.some(r=>'surp' in r);
+  $('#tbl tbody').innerHTML = visible().map(r => `<tr data-k="${esc(r.index)}">
+    <td class="l"><b>${esc(r.label)}</b> <span class="dim">${r.n}</span></td>
+    <td><span class="score">${fmt(r.score,0)}<i style="width:${Math.round(r.score*0.6)}px"></i></span></td>
+    <td class="${r.accel>0?'pos':r.accel<0?'neg':''}">${r.accel>0?'+':''}${fmt(r.accel,0)}</td>
+    <td class="l"><span class="badge b-${r.stage}">${r.stage}</span>${r.confirmed?' <span class="badge b-conf">confirmed</span>':''}</td>
+    <td>${pct(r.rs)}</td><td>${pct(r.r3m,0)}</td><td>${fmt(r.breadth200*100,0,'%')}</td><td>${fmt(r.ext,1)}</td><td>${fmt(r.volr,2)}</td>
+    ${hasF?`<td>${fmt(r.surp,1)}</td><td>${r.beat==null?'<span class="dim">–</span>':Math.round(r.beat*100)+'%'}</td>`:''}
+    <td class="leaders l" title="${esc(r.leaders)}">${esc(r.leaders)}</td></tr>`).join('');
+  $$('#tbl tbody tr').forEach(tr => tr.onclick = () => openDetail(tr.dataset.k));
+}
+function renderFilters(){
+  const n = f => ROWS.filter(r=> f==='all'||(f==='leading'?r.leading:f==='confirmed'?r.confirmed:r.stage===f||(f==='lagging'&&r.stage==='Lagging'))).length;
+  const defs = [['all','All'],['leading','Leading'],['confirmed','Confirmed'],['Improving','Improving'],['lagging','Lagging']];
+  $('#filters').innerHTML = defs.map(d=>`<button class="chip ${FILTER===d[0]?'on':''}" data-f="${d[0]}">${d[1]} · ${n(d[0])}</button>`).join('');
+  $$('#filters .chip').forEach(b => b.onclick = () => { FILTER=b.dataset.f; renderFilters(); renderRows(); });
+}
+async function scan(){
+  $('#scanBtn').disabled = true; $('#status').innerHTML = '<span class="spin"></span> scanning…'; $('#scanErr').innerHTML=''; $('#scanNote').innerHTML='';
+  try{
+    const d = await api('/api/scan', params()); ROWS = d.rows; CUR = d;
+    $('#scanMeta').textContent = `As of ${d.asof} · benchmark ${d.benchmark} · ${ROWS.length} themes` + (d.missing.length ? ` · no data for ${d.missing.length} tickers (${d.missing.slice(0,8).join(', ')}${d.missing.length>8?'…':''})` : '');
+    if(d.note) $('#scanNote').innerHTML = `<div class="note">${esc(d.note)}</div>`;
+    renderFilters(); renderRows(); $('#status').textContent = '';
+  }catch(e){ $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; $('#status').textContent=''; }
+  $('#scanBtn').disabled = false;
+}
+$('#scanBtn').onclick = scan;
+
+// drawer
+async function openDetail(k){
+  const row = ROWS.find(r=>r.index===k); CUR_THEME = k;
+  $('#dTitle').innerHTML = `${esc(row.label)} <span class="badge b-${row.stage}">${row.stage}</span>${row.confirmed?' <span class="badge b-conf">confirmed</span>':''}`;
+  $('#dMeta').textContent = `Score ${row.score.toFixed(0)} · 4-week change ${row.accel>0?'+':''}${row.accel.toFixed(0)}`;
+  $('#dHl').textContent='Not loaded.'; $('#dFu').textContent='Not loaded.'; $('#drawer').classList.add('on');
+  $('#dTbl tbody').innerHTML = '<tr><td class="dim">loading…</td></tr>';
+  try{
+    const d = await api('/api/detail', {...params(), theme:k});
+    $('#dTbl thead').innerHTML = '<tr><th class="l">Ticker</th><th class="l">Type</th><th>1m</th><th>3m</th><th>6m</th><th>Rel. str.</th><th>vs 200d</th><th>vs 52w high</th><th>Vol ×</th><th>RSI</th></tr>';
+    $('#dTbl tbody').innerHTML = d.rows.map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.index)}</b></td><td class="l dim">${r.kind}</td><td>${pct(r.r1m,0)}</td><td>${pct(r.r3m,0)}</td><td>${pct(r.r6m,0)}</td><td>${pct(r.rs)}</td><td>${pct(r.d200,0)}</td><td>${pct(r.near_high,0)}</td><td>${fmt(r.volr,2)}</td><td>${fmt(r.rsi,0)}</td></tr>`).join('');
+  }catch(e){ $('#dTbl tbody').innerHTML = `<tr><td class="neg">${esc(e.message)}</td></tr>`; }
+}
+let CUR_THEME = null;
+$('#closeDrawer').onclick = () => $('#drawer').classList.remove('on');
+document.addEventListener('keydown', e => { if(e.key==='Escape') $('#drawer').classList.remove('on'); });
+$('#hlBtn').onclick = async () => {
+  $('#dHl').innerHTML = '<span class="spin"></span>';
+  try{ const d = await api('/api/headlines', {...params(), theme:CUR_THEME, n:8});
+    $('#dHl').innerHTML = `<p class="meta">${d.total} stories in the last 14 days. Context only; not backtestable.</p><ul class="hl">` + d.items.map(i=>`<li>${esc(i.title)}<br><small>${esc(i.date)}</small></li>`).join('') + '</ul>';
+  }catch(e){ $('#dHl').innerHTML = `<span class="neg">${esc(e.message)}</span>`; }
+};
+$('#fuBtn').onclick = async () => {
+  $('#dFu').innerHTML = '<span class="spin"></span> fetching (a few seconds)…';
+  try{ const d = await api('/api/fundamentals', {...params(), theme:CUR_THEME});
+    $('#dFu').innerHTML = '<div class="wrap"><table><thead><tr><th class="l">Stock</th><th>Fwd P/E</th><th>Rev growth</th><th>EPS growth</th><th>Upside to target</th><th>Revisions</th></tr></thead><tbody>' +
+      d.rows.map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.index)}</b></td><td>${fmt(r.fwd_pe,1)}</td><td>${fmt(r.rev_g,0,'%')}</td><td>${fmt(r.eps_g,0,'%')}</td><td>${fmt(r.upside,0,'%')}</td><td>${r.rev_bal==null?'–':(r.rev_bal>0?'+':'')+r.rev_bal.toFixed(1)}</td></tr>`).join('') + '</tbody></table></div><p class="meta">Revisions = (up − down FY EPS revisions, 30d) ÷ total, −1…+1. Current values only.</p>';
+  }catch(e){ $('#dFu').innerHTML = `<span class="neg">${esc(e.message)}</span>`; }
+};
+
+// jobs
+function jobBody(cmd){
+  const b = {universe:$('#universe').value, offline:$('#offline').checked};
+  if(cmd==='altfetch'){ b.news=$('#j-news').checked; b.refresh=$('#j-refresh').checked; }
+  if(cmd==='headlines'){ b.n=+$('#j-n').value; }
+  if(cmd==='backtest'){ b.start=$('#j-start').value; b.step=+$('#j-step').value; }
+  if(cmd==='research'){ b.hist=$('#j-hist').value; b.validate=$('#j-val').value; }
+  return b;
+}
+$$('[data-job]').forEach(btn => btn.onclick = async () => {
+  const cmd = btn.dataset.job; $('#console').textContent=''; $('#jobTitle').textContent = btn.closest('.card').querySelector('h3').textContent;
+  try{ const j = await api('/api/run/'+cmd, jobBody(cmd)); JOB = {id:j.id, next:0}; $('#jobCmd').textContent = '$ '+j.command; $('#cancelBtn').disabled=false; poll(); }
+  catch(e){ $('#console').textContent = e.message; }
+});
+async function poll(){
+  clearTimeout(TIMER); if(!JOB) return;
+  try{
+    const s = await api(`/api/job/${JOB.id}?since=${JOB.next}`); JOB.next = s.next;
+    if(s.lines.length){ const c=$('#console'), atEnd = c.scrollTop+c.clientHeight >= c.scrollHeight-30; c.textContent += s.lines.join('\n')+'\n'; if(atEnd) c.scrollTop=c.scrollHeight; }
+    $('#jobState').innerHTML = s.done ? (s.code===0 ? '✓ finished' : '✗ exited with code '+s.code)+` (${s.elapsed}s)` : `<span class="spin"></span> running ${s.elapsed}s`;
+    if(s.done){ $('#cancelBtn').disabled=true; JOB=null; refreshConfig(); return; }
+  }catch(e){ $('#jobState').textContent = e.message; JOB=null; return; }
+  TIMER = setTimeout(poll, 1000);
+}
+$('#cancelBtn').onclick = async () => { if(JOB) await api(`/api/job/${JOB.id}/cancel`, {}); };
+$('#clearBtn').onclick = () => { $('#console').textContent=''; $('#jobCmd').innerHTML='&nbsp;'; $('#jobState').textContent=''; };
+
+async function refreshConfig(){
+  CFG = await api('/api/config');
+  const u = $('#universe'), cur = u.value;
+  u.innerHTML = Object.keys(CFG.universes).map(k=>`<option value="${k}">${k.replace('.yaml','')} (vs ${esc(CFG.universes[k].benchmark)})</option>`).join(''); if(cur) u.value = cur;
+  const opts = CFG.hist.map(h=>`<option>${h}</option>`).join('');
+  $('#j-hist').innerHTML = opts || '<option value="">(run a backtest first)</option>';
+  $('#j-val').innerHTML = '<option value="">(none)</option>' + opts;
+}
+refreshConfig().catch(e => $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`);
+</script>
+</body>
+</html>

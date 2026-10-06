@@ -146,7 +146,7 @@ def headlines(query: str, n: int = 6, days: int = 14) -> tuple[list[dict], int]:
     return out[:n], len(items)
 
 
-def fetch_earnings(tickers: list[str], refresh=False) -> pd.DataFrame:
+def fetch_earnings(tickers: list[str], refresh=False, cache_only=False) -> pd.DataFrame:
     """Dated EPS estimate / reported / surprise% per stock (yfinance get_earnings_dates)."""
     import yfinance as yf
 
@@ -156,6 +156,8 @@ def fetch_earnings(tickers: list[str], refresh=False) -> pd.DataFrame:
         f = ALT / "earnings" / f"{t.replace('^', '_')}.csv"
         if f.exists() and not refresh:
             df = pd.read_csv(f, parse_dates=["date"]) if f.stat().st_size > 5 else None
+        elif cache_only:
+            df = None
         else:
             df = None
             try:

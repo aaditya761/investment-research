@@ -109,34 +109,34 @@ themes:
 
   # --- control themes: unfashionable / non-bull areas, so the backtest can see misses and false alarms ---
   staples:
-    label: US staples (control)
+    label: US staples
     etfs: [XLP, VDC]
     stocks: [PG, KO, PEP, WMT, COST]
   reits:
-    label: US REITs (control)
+    label: US REITs
     etfs: [VNQ, XLRE]
     stocks: [PLD, O, AMT, EQIX]
   us_healthcare:
-    label: US healthcare (control)
+    label: US healthcare
     etfs: [XLV, IHF]
     stocks: [UNH, JNJ, ABT, TMO]
   clean_energy:
-    label: Solar & clean energy (control)
+    label: Solar & clean energy
     etfs: [TAN, ICLN, LIT]
     stocks: [ENPH, FSLR, PLUG, SEDG]
   long_bonds:
-    label: Long US bonds (control)
+    label: Long US bonds
     etfs: [TLT, IEF, LQD, HYG]
     stocks: []
   indonesia:
-    label: Indonesia (control)
+    label: Indonesia
     etfs: [EIDO]
     stocks: ["^JKSE", BBCA.JK, BBRI.JK, TLKM.JK]
   turkey_safrica:
-    label: Turkey & South Africa (control)
+    label: Turkey & South Africa
     etfs: [TUR, EZA]
     stocks: [THYAO.IS, AKBNK.IS, NPN.JO]
   consumer_disc:
-    label: US consumer discretionary (control)
+    label: US consumer discretionary
     etfs: [XLY, XRT]
     stocks: [HD, MCD, NKE, SBUX]

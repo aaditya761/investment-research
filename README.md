@@ -3,7 +3,16 @@
 Ranks global themes (crypto, gold, East Asia, hyperscalers, memory, power, ...) by how likely they are to be
 prepping for a bull run. Each theme is a basket of ETF proxies plus individual stocks defined in `themes.yaml`.
 
-## Commands
+## Point-and-click UI
+
+    python -m themescan ui            # opens http://127.0.0.1:8765 (add --port N to change, --no-browser to skip opening)
+
+Scan tab: pick a universe (global / India), tick *Cached prices only* for instant reruns, press **Scan**. Click any column to sort,
+use the filter pills (Leading / Confirmed / Improving / Lagging), and click a theme for its tickers, live headlines and a valuation
+snapshot. *Data & jobs* tab has a button for each long-running command (download data, fundamentals, headlines, backtest, research)
+with a live console. It runs on your machine only (bound to 127.0.0.1, no extra dependencies).
+
+## Commands (CLI equivalents)
 
 Global options go **before** the subcommand: `--themes FILE`, `--demo`, `--offline`, `--refresh`, `--start DATE`, `--cache DIR`, `--csv OUT`.
 
