@@ -1,0 +1,104 @@
+# Theme universe. Each theme = ETF proxies + individual stocks. Edit freely.
+# Basket metrics are computed over etfs + stocks together; ticker format is Yahoo Finance.
+benchmark: ACWI
+
+# Known historical runs, used by `backtest` to check how early the scanner flagged them.
+# Dates are approximate starts of the run -- adjust to your own reading.
+events:
+  - {theme: crypto,        start: 2020-10-01, label: "Crypto 2021"}
+  - {theme: hyperscalers,  start: 2023-01-01, label: "US hyperscalers 2023"}
+  - {theme: power_ai,      start: 2023-10-01, label: "Power stocks"}
+  - {theme: gold,          start: 2025-02-01, label: "Gold 2025"}
+  - {theme: japan,         start: 2025-04-15, label: "Nikkei 2025"}
+  - {theme: korea,         start: 2025-05-01, label: "KOSPI 2025"}
+  - {theme: memory,        start: 2025-06-01, label: "Memory stocks"}
+
+themes:
+  crypto:
+    label: Crypto
+    etfs: [IBIT, ETHA]
+    stocks: [BTC-USD, ETH-USD, SOL-USD, COIN, MSTR, MARA, RIOT, CLSK]
+  gold:
+    label: Gold & miners
+    etfs: [GLD, IAU, GDX, GDXJ]
+    stocks: [NEM, AEM, KGC, WPM, FNV]
+  silver:
+    label: Silver
+    etfs: [SLV, SIL]
+    stocks: [PAAS, HL, AG, WPM]
+  copper_metals:
+    label: Copper & base metals
+    etfs: [COPX, CPER, XME]
+    stocks: [FCX, SCCO, TECK, BHP]
+  uranium_nuclear:
+    label: Uranium & nuclear
+    etfs: [URA, URNM, NLR]
+    stocks: [CCJ, SMR, OKLO, LEU, NXE]
+  power_ai:
+    label: Power for AI
+    etfs: [GRID, UTES, XLU]
+    stocks: [VST, CEG, NRG, TLN, GEV, ETN, PWR]
+  hyperscalers:
+    label: US hyperscalers
+    etfs: []
+    stocks: [MSFT, GOOGL, AMZN, META, ORCL]
+  ai_semis:
+    label: AI semiconductors
+    etfs: [SMH, SOXX]
+    stocks: [NVDA, AVGO, TSM, AMD, ASML]
+  memory:
+    label: Memory & storage
+    etfs: []
+    stocks: [MU, 000660.KS, 005930.KS, WDC, STX, SNDK]
+  japan:
+    label: Japan
+    etfs: [EWJ, DXJ]
+    stocks: ["^N225", 7203.T, 6758.T, 8035.T, 9984.T, 6861.T]
+  korea:
+    label: Korea
+    etfs: [EWY]
+    stocks: ["^KS11", 005930.KS, 000660.KS, 035420.KS, 005380.KS]
+  taiwan:
+    label: Taiwan
+    etfs: [EWT]
+    stocks: ["^TWII", 2330.TW, 2317.TW, 2454.TW]
+  china_hk:
+    label: China / HK
+    etfs: [FXI, KWEB, MCHI]
+    stocks: [BABA, PDD, 0700.HK, 1810.HK]
+  india:
+    label: India
+    etfs: [INDA, EPI]
+    stocks: ["^NSEI", RELIANCE.NS, HDFCBANK.NS, TCS.NS]
+  europe:
+    label: Europe
+    etfs: [VGK, EZU]
+    stocks: [SAP, SIE.DE, MC.PA, ASML]
+  defense:
+    label: Defense
+    etfs: [ITA, PPA]
+    stocks: [LMT, RTX, NOC, RHM.DE, HO.PA, BA.L]
+  latam:
+    label: Latin America
+    etfs: [EWZ, ILF, EWW]
+    stocks: [VALE, PBR, ITUB]
+  biotech:
+    label: Biotech & GLP-1
+    etfs: [XBI, IBB]
+    stocks: [LLY, NVO, VRTX, REGN]
+  small_caps:
+    label: US small caps
+    etfs: [IWM, IJR]
+    stocks: []
+  financials:
+    label: US financials
+    etfs: [XLF, KBE, KRE]
+    stocks: [JPM, GS, MS, SCHW]
+  energy:
+    label: Oil & gas
+    etfs: [XLE, XOP]
+    stocks: [XOM, CVX, COP, OXY]
+  cybersecurity:
+    label: Cybersecurity
+    etfs: [CIBR, HACK]
+    stocks: [CRWD, PANW, ZS, FTNT]
