@@ -8,7 +8,11 @@ from .config import Config
 def make(cfg: Config, n_days: int = 1700, seed: int = 7, hot: dict[str, int] | None = None, end="2026-09-30"):
     """`hot` maps theme -> bars-before-end at which a bull run starts. Default plants three runs."""
     rng = np.random.default_rng(seed)
-    hot = hot if hot is not None else {"memory": 70, "gold": 90, "japan": 400}
+    if hot is None:
+        hot = {k: v for k, v in {"memory": 70, "gold": 90, "japan": 400}.items() if k in cfg.themes}
+        if not hot:  # custom universe: plant two early runs in arbitrary themes
+            keys = list(cfg.themes)
+            hot = {keys[3 % len(keys)]: 60, keys[7 % len(keys)]: 90}
     idx = pd.bdate_range(end=end, periods=n_days)
     mkt = rng.normal(0.0003, 0.008, n_days)
     out = {cfg.benchmark: 100 * np.exp(np.cumsum(mkt))}

@@ -1,0 +1,97 @@
+# India sector universe. Same engine as themes.yaml; run with:
+#   python -m themescan --themes themes_india.yaml scan
+# Benchmark is the Nifty 50 (same currency, so relative strength is clean).
+# "etfs" holds NSE sector indices / sector ETFs; "stocks" holds large liquid constituents.
+# Any ticker Yahoo doesn't recognise is reported as missing and skipped.
+benchmark: ^NSEI
+events: []
+
+themes:
+  private_banks:
+    label: Private banks
+    etfs: [^NSEBANK, BANKBEES.NS]
+    stocks: [HDFCBANK.NS, ICICIBANK.NS, AXISBANK.NS, KOTAKBANK.NS, INDUSINDBK.NS]
+  psu_banks:
+    label: PSU banks
+    etfs: [^CNXPSUBANK, PSUBNKBEES.NS]
+    stocks: [SBIN.NS, BANKBARODA.NS, PNB.NS, CANBK.NS, UNIONBANK.NS]
+  nbfc_financials:
+    label: NBFC & financial services
+    etfs: [^CNXFIN]
+    stocks: [BAJFINANCE.NS, BAJAJFINSV.NS, SHRIRAMFIN.NS, CHOLAFIN.NS, PFC.NS, RECLTD.NS]
+  insurance_amc:
+    label: Insurance & asset managers
+    stocks: [SBILIFE.NS, HDFCLIFE.NS, ICICIPRULI.NS, ICICIGI.NS, HDFCAMC.NS, LICI.NS]
+  capital_markets:
+    label: Capital markets & brokers
+    stocks: [BSE.NS, CDSL.NS, ANGELONE.NS, MCX.NS, 360ONE.NS, NUVAMA.NS]
+  it_services:
+    label: IT services
+    etfs: [^CNXIT, ITBEES.NS]
+    stocks: [TCS.NS, INFY.NS, HCLTECH.NS, WIPRO.NS, TECHM.NS, LTIM.NS, PERSISTENT.NS, COFORGE.NS]
+  pharma:
+    label: Pharma
+    etfs: [^CNXPHARMA, PHARMABEES.NS]
+    stocks: [SUNPHARMA.NS, DRREDDY.NS, CIPLA.NS, LUPIN.NS, ZYDUSLIFE.NS, DIVISLAB.NS]
+  hospitals_healthcare:
+    label: Hospitals & healthcare
+    stocks: [APOLLOHOSP.NS, MAXHEALTH.NS, FORTIS.NS, MEDANTA.NS, METROPOLIS.NS]
+  auto:
+    label: Autos
+    etfs: [^CNXAUTO]
+    stocks: [MARUTI.NS, M&M.NS, TATAMOTORS.NS, BAJAJ-AUTO.NS, EICHERMOT.NS, HEROMOTOCO.NS, TVSMOTOR.NS]
+  fmcg:
+    label: FMCG
+    etfs: [^CNXFMCG]
+    stocks: [HINDUNILVR.NS, ITC.NS, NESTLEIND.NS, BRITANNIA.NS, TATACONSUM.NS, DABUR.NS]
+  consumer_durables_retail:
+    label: Consumer durables & retail
+    stocks: [TITAN.NS, DMART.NS, TRENT.NS, HAVELLS.NS, VOLTAS.NS, DIXON.NS]
+  new_age_internet:
+    label: New-age internet
+    stocks: [ETERNAL.NS, NYKAA.NS, PAYTM.NS, POLICYBZR.NS, SWIGGY.NS, NAUKRI.NS]
+  metals_mining:
+    label: Metals & mining
+    etfs: [^CNXMETAL]
+    stocks: [TATASTEEL.NS, JSWSTEEL.NS, HINDALCO.NS, VEDL.NS, COALINDIA.NS, NMDC.NS]
+  oil_gas:
+    label: Oil, gas & energy
+    etfs: [^CNXENERGY]
+    stocks: [RELIANCE.NS, ONGC.NS, BPCL.NS, IOC.NS, GAIL.NS, OIL.NS]
+  power_utilities:
+    label: Power & utilities
+    stocks: [NTPC.NS, POWERGRID.NS, TATAPOWER.NS, ADANIPOWER.NS, JSWENERGY.NS, NHPC.NS]
+  renewables:
+    label: Renewables & green energy
+    stocks: [SUZLON.NS, ADANIGREEN.NS, WAAREEENER.NS, INOXWIND.NS, PREMIERENE.NS]
+  capital_goods_infra:
+    label: Capital goods & infra
+    etfs: [^CNXINFRA, INFRABEES.NS]
+    stocks: [LT.NS, SIEMENS.NS, ABB.NS, CUMMINSIND.NS, POLYCAB.NS, KEI.NS]
+  defence:
+    label: Defence & shipbuilding
+    stocks: [HAL.NS, BEL.NS, BDL.NS, MAZDOCK.NS, COCHINSHIP.NS, BHARATFORG.NS]
+  railways:
+    label: Railways
+    stocks: [IRFC.NS, RVNL.NS, IRCON.NS, RAILTEL.NS, TITAGARH.NS, JWL.NS]
+  realty:
+    label: Real estate
+    etfs: [^CNXREALTY]
+    stocks: [DLF.NS, GODREJPROP.NS, LODHA.NS, OBEROIRLTY.NS, PRESTIGE.NS]
+  cement_building:
+    label: Cement & building materials
+    stocks: [ULTRACEMCO.NS, AMBUJACEM.NS, SHREECEM.NS, DALBHARAT.NS, ASIANPAINT.NS]
+  chemicals:
+    label: Chemicals
+    stocks: [PIDILITIND.NS, SRF.NS, UPL.NS, DEEPAKNTR.NS, AARTIIND.NS, PIIND.NS]
+  telecom:
+    label: Telecom
+    stocks: [BHARTIARTL.NS, IDEA.NS, INDUSTOWER.NS, TATACOMM.NS]
+  psu_conglomerate:
+    label: PSUs (broad)
+    etfs: [^CNXPSE, CPSEETF.NS]
+    stocks: [ONGC.NS, NTPC.NS, COALINDIA.NS, HAL.NS, BEL.NS]
+  gold_india:
+    label: Gold (INR)
+    etfs: [GOLDBEES.NS]
+    stocks: [MUTHOOTFIN.NS, MANAPPURAM.NS, KALYANKJIL.NS, TITAN.NS]

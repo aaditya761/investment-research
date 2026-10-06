@@ -11,6 +11,7 @@ prepping for a bull run. Each theme is a basket of ETF proxies plus individual s
     python -m themescan scan --asof 2025-01-15     # what did it look like then?
     python -m themescan backtest --bt-start 2020-01-01
     python -m themescan --demo scan                # synthetic data, no network
+    python -m themescan --themes themes_india.yaml scan   # India sectors vs Nifty 50
     pytest
 
 ## How it scores (0-100, percentile-ranked across themes)
