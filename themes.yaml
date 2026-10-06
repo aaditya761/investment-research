@@ -78,10 +78,14 @@ themes:
     label: Defense
     etfs: [ITA, PPA]
     stocks: [LMT, RTX, NOC, RHM.DE, HO.PA, BA.L]
-  latam:
-    label: Latin America
-    etfs: [EWZ, ILF, EWW]
-    stocks: [VALE, PBR, ITUB]
+  brazil:
+    label: Brazil
+    etfs: [EWZ, FLBR]
+    stocks: ["^BVSP", VALE, PBR, ITUB, BBD, NU, ABEV]
+  latam_ex_brazil:
+    label: LatAm ex-Brazil
+    etfs: [EWW, ECH, ARGT, EPU]
+    stocks: [MELI, FMX, BAP, YPF]
   biotech:
     label: Biotech & GLP-1
     etfs: [XBI, IBB]
