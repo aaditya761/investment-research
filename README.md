@@ -29,7 +29,8 @@ Global options go **before** the subcommand: `--themes FILE`, `--demo`, `--offli
 
     # 2. Fundamentals and news (context for the scan)
     python -m themescan altfetch                               # download earnings, analyst and news history (slow: news is rate-limited)
-    python -m themescan altfetch --skip-news                   # earnings + analyst only (fast, enough for `confirmed`)
+    python -m themescan altfetch --skip-news                   # earnings + analyst only (fast; needed for the earnings half of conviction)
+    python -m themescan verify memory japan                    # full evidence checklist for chosen themes
     python -m themescan fundamentals --theme memory japan      # live P/E, growth, estimate revisions
     python -m themescan headlines                              # live headlines for every Leading theme
     python -m themescan headlines --theme brazil --n 8         # headlines for chosen themes
@@ -38,18 +39,26 @@ Global options go **before** the subcommand: `--themes FILE`, `--demo`, `--offli
     python -m themescan --csv data/hist_global.csv backtest --bt-start 2019-06-01 --step 5
     python -m themescan --themes themes_india.yaml --csv data/hist_india.csv backtest --bt-start 2019-06-01 --step 5
     python -m themescan research data/hist_global.csv --validate data/hist_india.csv
+    python -m themescan research data/hist_global.csv --blend  # test earnings weight (0%..100%) in the score
 
 Typical routine: `scan` (add `--detail` for any theme you care about) -> `headlines` for the Leading ones -> `fundamentals` for valuation.
 Re-run `backtest` + `research` after changing themes or scoring.
 
-## How it scores (0-100, percentile-ranked across themes)
+## How it scores
 
-Score = 50% slope of the 200d MA, 30% relative strength vs benchmark (1/3/6 month), 20% distance above the 200d MA.
-Breadth, volume, Bollinger squeeze, near-high and acceleration are still *reported* but not scored: in the
-walk-forward research they had no predictive power (below).
+**Conviction (0-100) = 50% price score + 50% earnings composite.** Earnings is the largest single component because it was the
+strongest signal in the walk-forward tests; earnings alone failed out of sample on India, so it is not 100%.
 
-Stages: **Leading** (score >= 60), **Extended** (leading but stretched: >2 std above the 200d or RSI > 78), **Improving**
-(40-60 and rising), **Neutral**, **Lagging** (score <= 30). The `lead` flag = Leading or Extended.
+- *Price score* (percentile-ranked across themes): 50% slope of the 200d MA, 30% relative strength vs benchmark (1/3/6 month), 20% distance above the 200d MA.
+- *Earnings composite* (percentile-ranked): 50% median EPS surprise %, 30% share of beats, 20% change in surprise vs the prior 120 days. Themes whose EPS is
+  accounting noise (`use_earnings: false`, e.g. crypto) or that lack coverage are price-only and cannot be "Strong".
+- *Verdict:* **Strong** >= 80, **Positive** 65-80, **Neutral** 35-65, **Avoid** < 35. Average forward alpha rose with each tier in both periods on the global and India universes
+  (Strong +3.9% to +5.1% a quarter globally, Avoid -1.4% to -1.6%).
+- *Stage* (price only, descriptive): Leading (price score >= 60), Extended, Improving, Neutral, Lagging.
+
+**Evidence checklist** (`verify` command, or click a theme in the UI): every other source is checked but **not scored**, each tagged by how much to trust it:
+`validated` (backtested, in the score) / `live only` (valuation, estimate revisions, analyst targets, headline tone: cannot be backtested) /
+`tested: no edge` (macro tailwind, analyst upgrades, Wikipedia attention, not-stretched filter: showed no predictive value, shown as context).
 
 ## Validation (`python -m themescan research data/hist_global.csv --validate data/hist_india.csv`)
 
@@ -84,7 +93,7 @@ train < 2023 / test >= 2023, overlap-adjusted t-stats). **None produced a robust
 | **Earnings surprise** (median EPS surprise % of reports in the last 120d) | Yahoo, 120 stocks | **IC +0.08, t 2.9; top-fifth minus bottom-fifth positive in 8 of 8 years; survives dropping any one theme.** Weak on India sectors (t 1.1, flips in test). |
 
 The one validated improvement: among Leading themes, those also in the top half by EPS surprise had +1.7% (train) / +2.7% (test)
-quarterly alpha vs -0.5% / -0.5% for Leading themes with weak surprises. `scan` shows this as `confirmed`. Caveats: strongest in
+quarterly alpha vs -0.5% / -0.5% for Leading themes with weak surprises. This is now the earnings half of **conviction**. Caveats: strongest in
 memory / energy / crypto-adjacent baskets (the 2019-26 winners, so survivorship flatters it); crypto EPS is mark-to-market noise;
 surprises are only visible after reports, so this confirms a run rather than predicting it.
 

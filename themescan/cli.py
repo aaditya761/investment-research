@@ -1,6 +1,5 @@
 import argparse
 import warnings
-from pathlib import Path
 
 import pandas as pd
 
@@ -25,48 +24,67 @@ def _load(args, cfg):
 
 def _fmt(df):
     t = pd.DataFrame(index=df.index)
-    t["score"], t["4w_chg"], t["stage"] = df.score.round(0), df.accel.round(0), df.stage
-    t["lead"] = df.leading.map({True: "YES", False: ""})
+    t["conv"], t["verdict"] = df.conviction.round(0), df.verdict
+    t["price"], t["earn"] = df.score.round(0), df.earn.round(0)
+    t["4w_chg"], t["stage"] = df.accel.round(0), df.stage
     t["rel_str%"] = (df.rs * 100).round(1)
     t["3m%"] = (df.r3m * 100).round(0)
     t[">200d"] = (df.breadth200 * 100).round(0)
-    t["ext_z"] = df.ext.round(1)
-    t["vol_x"] = df.volr.round(2)
-    if "surp" in df:
-        t["surp%"] = df.surp.round(1)
-        t["beat%"] = (df.beat * 100).round(0)
-        t["confirmed"] = df.confirmed.map({True: "YES", False: ""})
+    t["surp%"] = df.surp.round(1)
+    t["beat%"] = (df.beat * 100).round(0)
     t["leaders"] = df.leaders
     return t
 
 
 def cmd_scan(args):
+    from . import verify
+
     cfg = load_config(args.themes)
     close, vol = _load(args, cfg)
     end = len(close) if not args.asof else close.index.searchsorted(pd.Timestamp(args.asof), side="right")
-    df, tm = scoring.scan(close, vol, close[cfg.benchmark], cfg.themes, end)
-    earn_dir = Path("data/alt/earnings")
-    if earn_dir.exists() and not args.no_fundamentals:
-        from . import altdata
-
-        stocks = sorted({t for th in cfg.themes.values() for t in th.stocks if not t.startswith("^") and "-USD" not in t})
-        df = altdata.add_earnings_columns(df, altdata.fetch_earnings(stocks), cfg.themes, close.index[end - 1])
-    print(f"As of {close.index[end - 1].date()} | benchmark {cfg.benchmark} | {len(df)} themes\n")
-    lead, lag = df[df.leading], df[df.stage == "Lagging"]
-    if "confirmed" in df:
-        print("confirmed = Leading AND top-half EPS surprise over the last 120d (best-validated combination)\n")
-    print(f"== LEADING (score >= {scoring.LEAD}: rising 200d trend + relative strength; 'Extended' = already stretched) ==")
-    print(_fmt(lead).to_string() if len(lead) else "none")
-    print(f"\n== LAGGING (score <= {scoring.LAG}: the most reliable signal in the backtest is to avoid these) ==")
-    print(_fmt(lag).to_string() if len(lag) else "none")
+    df, note = verify.full_scan(cfg, close, vol, end, fundamentals=not args.no_fundamentals and not args.demo)
+    _, tm = scoring.score_asof(close, vol, close[cfg.benchmark], cfg.themes, end)
+    print(f"As of {close.index[end - 1].date()} | benchmark {cfg.benchmark} | {len(df)} themes")
+    print("conviction = 50% price (200d trend slope, relative strength, distance above 200d) + 50% earnings (EPS surprise, beat rate, surprise trend)")
+    print("Strong >= 80 | Positive 65-80 | Neutral 35-65 | Avoid < 35.  Tiers were monotonic in walk-forward tests on global and India themes.")
+    if note:
+        print(f"note: {note}")
+    top, avoid = df[df.verdict.isin(["Strong", "Positive"])], df[df.verdict == "Avoid"]
+    print("\n== STRONG / POSITIVE ==")
+    print(_fmt(top).to_string() if len(top) else "none")
+    print("\n== AVOID ==")
+    print(_fmt(avoid).to_string() if len(avoid) else "none")
     print("\n== ALL THEMES ==")
     print(_fmt(df).to_string())
+    print("\nNext: `themescan verify <theme>` runs the full evidence checklist (valuation, revisions, analysts, headlines, macro).")
     if args.detail:
         print(f"\n== {args.detail}: ticker detail ==")
         t = tm.reindex(cfg.themes[args.detail].tickers).dropna(how="all")
         print(t[["r1m", "r3m", "r6m", "rs", "d50", "d200", "near_high", "volr", "rsi", "ext"]].round(2).sort_values("rs", ascending=False).to_string())
     if args.csv:
         df.to_csv(args.csv)
+
+
+def cmd_verify(args):
+    from . import verify
+
+    cfg = load_config(args.themes)
+    close, vol = _load(args, cfg)
+    df, note = verify.full_scan(cfg, close, vol)
+    if note:
+        print(f"note: {note}\n")
+    sym = {"pass": "PASS", "fail": "FAIL", "na": " -- "}
+    for k in args.theme:
+        if k not in cfg.themes:
+            print(f"unknown theme {k!r}; choose from: {', '.join(cfg.themes)}")
+            continue
+        r = df.loc[k]
+        checks = verify.gather_live(cfg, close, k, len(close), r)
+        sm = verify.summarize(checks)
+        print(f"## {cfg.themes[k].label} ({k}): conviction {r.conviction:.0f} -> {r.verdict}  [price {r.score:.0f}, earnings {r.earn:.0f}]" if r.earn_covered else f"## {cfg.themes[k].label} ({k}): conviction {r.conviction:.0f} -> {r.verdict}  [price-only]")
+        for c in checks:
+            print(f"  [{sym[c['status']]}] {c['name']:44s} {c['detail']}   ({c['tier']})")
+        print("  " + " | ".join(f"{t}: {v['passed']}/{v['total']}" for t, v in sm.items()) + "\n")
 
 
 def cmd_backtest(args):
@@ -87,6 +105,15 @@ def cmd_research(args):
     hist = pd.read_csv(args.hist)
     val = pd.read_csv(args.validate) if args.validate else None
     print(research.report(hist, split=args.split, horizon=args.horizon, validate=val))
+    if args.blend:
+        from . import altdata
+
+        cfg = load_config(args.themes)
+        stocks = sorted({t for th in cfg.themes.values() for t in th.stocks if not t.startswith("^") and "-USD" not in t})
+        dates = pd.DatetimeIndex(sorted(pd.to_datetime(hist["date"]).unique()))
+        ef = altdata.earnings_features(altdata.fetch_earnings(stocks, cache_only=True), {k: t for k, t in cfg.themes.items() if t.use_earnings}, dates)
+        print("\n== Blending earnings into the price score (w_earn = weight on the earnings composite) ==")
+        print(research.blend_report(hist, ef, split=args.split, horizon=args.horizon))
 
 
 def cmd_altfetch(args):
@@ -183,6 +210,9 @@ def main(argv=None):
     u.add_argument("--port", type=int, default=8765)
     u.add_argument("--no-browser", action="store_true")
     u.set_defaults(fn=cmd_ui)
+    vf = sub.add_parser("verify", help="full evidence checklist for one or more themes")
+    vf.add_argument("theme", nargs="+")
+    vf.set_defaults(fn=cmd_verify)
     fu = sub.add_parser("fundamentals", help="live valuation/growth/estimate-revision snapshot per theme")
     fu.add_argument("--theme", nargs="*")
     fu.set_defaults(fn=cmd_fundamentals)
@@ -196,6 +226,7 @@ def main(argv=None):
     r.add_argument("--validate", help="CSV from another universe for out-of-universe check")
     r.add_argument("--split", default="2023-01-01")
     r.add_argument("--horizon", type=int, default=63)
+    r.add_argument("--blend", action="store_true", help="also test blending earnings into the score (use --themes for the matching universe)")
     r.set_defaults(fn=cmd_research)
     args = p.parse_args(argv)
     args.fn(args)

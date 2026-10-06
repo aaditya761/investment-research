@@ -69,7 +69,7 @@ def theme_weekly_excess(close: pd.DataFrame, bench: pd.Series, themes: dict) -> 
     return pd.DataFrame(out)
 
 
-def tailwinds(close, bench, themes, macro: pd.DataFrame) -> pd.DataFrame:
+def tailwinds(close, bench, themes, macro: pd.DataFrame, last_n: int | None = None) -> pd.DataFrame:
     """Long frame (theme, date, macro_tw, plus per-factor contributions) indexed by week-end date."""
     fc = factor_changes(macro)
     ex = theme_weekly_excess(close, bench, themes)
@@ -79,7 +79,8 @@ def tailwinds(close, bench, themes, macro: pd.DataFrame) -> pd.DataFrame:
     z = mom / mom.rolling(156, min_periods=52).std()
     sd = fc.rolling(BETA_WEEKS, min_periods=52).std()
     rows = []
-    for i in range(BETA_WEEKS, len(idx)):
+    first = BETA_WEEKS if last_n is None else max(BETA_WEEKS, len(idx) - last_n)
+    for i in range(first, len(idx)):
         win = slice(i - BETA_WEEKS + 1, i + 1)
         X = fc.iloc[win] / sd.iloc[i]
         zi = z.iloc[i]

@@ -56,3 +56,10 @@ def test_job_runs_and_streams(server):
             break
         time.sleep(0.5)
     assert s["done"]
+
+
+def test_scan_has_conviction_and_verify_endpoint(server):
+    code, d = call(server, "/api/scan", {"universe": "themes.yaml", "demo": True})
+    assert code == 200 and {"conviction", "verdict", "earn_covered"} <= set(d["rows"][0])
+    code, v = call(server, "/api/verify", {"universe": "themes.yaml", "demo": True, "theme": d["rows"][0]["index"]})
+    assert code == 200 and v["checks"] and v["summary"]["validated"]["total"] >= 1

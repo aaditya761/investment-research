@@ -50,7 +50,7 @@ tr:last-child td{border-bottom:0}
 .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600}
 .b-Leading{background:var(--good-bg);color:var(--good)}.b-Extended{background:var(--warn-bg);color:var(--warn)}
 .b-Improving{background:var(--info-bg);color:var(--info)}.b-Neutral{background:var(--neutral-bg);color:var(--neutral)}
-.b-Lagging{background:var(--bad-bg);color:var(--bad)}.b-conf{background:var(--good);color:var(--accent-ink)}
+.b-Lagging,.b-Avoid{background:var(--bad-bg);color:var(--bad)}.b-Strong{background:var(--good);color:var(--accent-ink)}.b-Positive{background:var(--good-bg);color:var(--good)}.b-conf{background:var(--good);color:var(--accent-ink)}
 .score{display:inline-flex;align-items:center;gap:8px;min-width:96px;justify-content:flex-end}
 .score i{display:block;height:6px;border-radius:3px;background:var(--accent);opacity:.8}
 .pos{color:var(--good)}.neg{color:var(--bad)}.dim{color:var(--muted)}
@@ -67,6 +67,8 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
 .drawer h4{margin:18px 0 8px;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .hl{list-style:none;padding:0;margin:0}.hl li{padding:7px 0;border-bottom:1px solid var(--line)}.hl small{color:var(--muted)}
 .x{float:right}
+.ck{display:grid;grid-template-columns:54px 1fr;gap:2px 10px;padding:7px 0;border-bottom:1px solid var(--line)}.ck b{font-size:12px}.ck small{color:var(--muted);grid-column:2}.st-pass{color:var(--good)}.st-fail{color:var(--bad)}.st-na{color:var(--muted)}
+.tag{font-size:11px;padding:1px 7px;border-radius:999px;background:var(--neutral-bg);color:var(--neutral);margin-left:6px}.tag.v{background:var(--good-bg);color:var(--good)}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px}
 @keyframes s{to{transform:rotate(360deg)}}
 @media (max-width:640px){main{padding:12px}.bar{gap:8px}}
@@ -124,10 +126,10 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
   <section class="panel" id="p-help">
     <div class="card" style="max-width:820px">
       <h3>How to read this</h3>
-      <p><b>Score (0–100)</b> ranks themes by the rising 200-day trend (50%), relative strength vs the benchmark (30%) and distance above the 200-day average (20%).</p>
-      <p><span class="badge b-Leading">Leading</span> score ≥ 60 · <span class="badge b-Extended">Extended</span> leading but stretched · <span class="badge b-Improving">Improving</span> 40–60 and rising · <span class="badge b-Neutral">Neutral</span> · <span class="badge b-Lagging">Lagging</span> score ≤ 30.</p>
-      <p><span class="badge b-conf">confirmed</span> = Leading and in the top half of themes by EPS surprise over the last 120 days. It was the only add-on that held up out of sample.</p>
-      <p>Backtests show the Leading list is only slightly better than chance and the Lagging list is the most reliable (avoid). It describes what is already trending; it does not predict the next bull run. This is a research screen, not investment advice.</p>
+      <p><b>Conviction (0–100)</b> = 50% <b>price score</b> (rising 200-day trend 50%, relative strength 30%, distance above the 200-day average 20%) + 50% <b>earnings</b> (EPS surprise 50%, beat rate 30%, surprise trend 20%). Earnings is the largest single component because it was the strongest signal in the backtests; pure earnings failed on India, so it isn't 100%.</p>
+      <p><span class="badge b-Strong">Strong</span> ≥ 80 · <span class="badge b-Positive">Positive</span> 65–80 · <span class="badge b-Neutral">Neutral</span> 35–65 · <span class="badge b-Avoid">Avoid</span> &lt; 35. In tests the average quarterly return vs other themes rose with each tier on both the global and India universes. Themes without usable earnings (e.g. crypto) are <i>price-only</i> and can't be Strong.</p>
+      <p><b>Evidence checklist</b> (click a theme): every other source is checked but <u>not scored</u>. Tags show how much to trust each: <span class="tag v">validated</span> backtested and used in the score; <span class="tag">live only</span> valuation, estimate revisions, analyst targets and headlines can't be backtested; <span class="tag">tested: no edge</span> macro, analyst upgrades, attention and "not stretched" showed no predictive value, so they are context only.</p>
+      <p>Backtests show this describes what is already working and avoids what isn't; it does not predict the next bull run. This is a research screen, not investment advice.</p>
       <p>Click a theme row to see its tickers, live headlines and a valuation snapshot. Everything here runs on your machine: the page talks only to <code>127.0.0.1</code>.</p>
     </div>
   </section>
@@ -136,6 +138,7 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
 <aside class="drawer" id="drawer">
   <button class="x" id="closeDrawer">Close ✕</button>
   <h2 id="dTitle"></h2><div class="meta" id="dMeta"></div>
+  <h4>Evidence checklist <button id="vfBtn" style="margin-left:8px;padding:3px 9px">Re-run</button></h4><div id="dVf" class="dim"></div>
   <h4>Tickers</h4><div class="wrap"><table id="dTbl"><thead></thead><tbody></tbody></table></div>
   <h4>Headlines <button id="hlBtn" style="margin-left:8px;padding:3px 9px">Load</button></h4><div id="dHl" class="dim">Not loaded.</div>
   <h4>Valuation snapshot <button id="fuBtn" style="margin-left:8px;padding:3px 9px">Load</button></h4><div id="dFu" class="dim">Not loaded.</div>
@@ -143,7 +146,7 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
 
 <script>
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-let CFG = {}, ROWS = [], FILTER = 'all', SORT = {k:'score', asc:false}, CUR = null, JOB = null, TIMER = null;
+let CFG = {}, ROWS = [], FILTER = 'all', SORT = {k:'conviction', asc:false}, CUR = null, JOB = null, TIMER = null;
 
 async function api(path, body){
   const r = await fetch(path, body===undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
@@ -159,34 +162,36 @@ $$('.tab').forEach(t => t.onclick = () => { $$('.tab').forEach(x=>x.classList.to
 
 // scan table
 const COLS = [
-  ['label','Theme','l'],['score','Score'],['accel','4w chg'],['stage','Stage','l'],['rs','Rel. strength'],['r3m','3m'],
-  ['breadth200','>200d'],['ext','Ext. z'],['volr','Vol ×'],['surp','EPS surp %'],['beat','Beats'],['leaders','Leaders','l']
+  ['label','Theme','l'],['conviction','Conviction'],['verdict','Verdict','l'],['score','Price'],['earn','Earnings'],['accel','4w chg'],['stage','Stage','l'],
+  ['rs','Rel. strength'],['r3m','3m'],['breadth200','>200d'],['surp','EPS surp %'],['beat','Beats'],['leaders','Leaders','l']
 ];
 function renderHead(){
-  const hasF = ROWS.some(r=>'surp' in r);
+  const hasF = true;
   $('#tbl thead').innerHTML = '<tr>' + COLS.filter(c=>hasF||!['surp','beat'].includes(c[0])).map(c=>
     `<th class="${c[2]||''} ${SORT.k===c[0]?'sorted'+(SORT.asc?' asc':''):''}" data-k="${c[0]}">${c[1]}</th>`).join('') + '</tr>';
-  $$('#tbl th').forEach(th => th.onclick = () => { const k=th.dataset.k; SORT = {k, asc: SORT.k===k ? !SORT.asc : (k==='label'||k==='stage'||k==='leaders')}; renderRows(); });
+  $$('#tbl th').forEach(th => th.onclick = () => { const k=th.dataset.k; SORT = {k, asc: SORT.k===k ? !SORT.asc : (k==='label'||k==='stage'||k==='leaders'||k==='verdict')}; renderRows(); });
 }
 function visible(){
-  return ROWS.filter(r => FILTER==='all' ? true : FILTER==='leading' ? r.leading : FILTER==='confirmed' ? r.confirmed : FILTER==='lagging' ? r.stage==='Lagging' : r.stage===FILTER)
+  return ROWS.filter(r => FILTER==='all' ? true : FILTER==='leading' ? r.leading : r.verdict===FILTER)
     .sort((a,b)=>{ const x=a[SORT.k], y=b[SORT.k]; const c = (x==null)-(y==null) || (typeof x==='string' ? x.localeCompare(y) : x-y); return SORT.asc ? c : -c; });
 }
 function renderRows(){
-  renderHead(); const hasF = ROWS.some(r=>'surp' in r);
+  renderHead();
   $('#tbl tbody').innerHTML = visible().map(r => `<tr data-k="${esc(r.index)}">
     <td class="l"><b>${esc(r.label)}</b> <span class="dim">${r.n}</span></td>
-    <td><span class="score">${fmt(r.score,0)}<i style="width:${Math.round(r.score*0.6)}px"></i></span></td>
+    <td><span class="score">${fmt(r.conviction,0)}<i style="width:${Math.round(r.conviction*0.6)}px"></i></span></td>
+    <td class="l"><span class="badge b-${r.verdict}">${r.verdict}</span>${r.earn_covered?'':' <span class="tag" title="No usable earnings data: conviction is price-only">price-only</span>'}</td>
+    <td>${fmt(r.score,0)}</td><td>${r.earn==null?'<span class="dim">–</span>':fmt(r.earn,0)}</td>
     <td class="${r.accel>0?'pos':r.accel<0?'neg':''}">${r.accel>0?'+':''}${fmt(r.accel,0)}</td>
-    <td class="l"><span class="badge b-${r.stage}">${r.stage}</span>${r.confirmed?' <span class="badge b-conf">confirmed</span>':''}</td>
-    <td>${pct(r.rs)}</td><td>${pct(r.r3m,0)}</td><td>${fmt(r.breadth200*100,0,'%')}</td><td>${fmt(r.ext,1)}</td><td>${fmt(r.volr,2)}</td>
-    ${hasF?`<td>${fmt(r.surp,1)}</td><td>${r.beat==null?'<span class="dim">–</span>':Math.round(r.beat*100)+'%'}</td>`:''}
+    <td class="l"><span class="badge b-${r.stage}">${r.stage}</span></td>
+    <td>${pct(r.rs)}</td><td>${pct(r.r3m,0)}</td><td>${fmt(r.breadth200*100,0,'%')}</td>
+    <td>${fmt(r.surp,1)}</td><td>${r.beat==null?'<span class="dim">–</span>':Math.round(r.beat*100)+'%'}</td>
     <td class="leaders l" title="${esc(r.leaders)}">${esc(r.leaders)}</td></tr>`).join('');
   $$('#tbl tbody tr').forEach(tr => tr.onclick = () => openDetail(tr.dataset.k));
 }
 function renderFilters(){
-  const n = f => ROWS.filter(r=> f==='all'||(f==='leading'?r.leading:f==='confirmed'?r.confirmed:r.stage===f||(f==='lagging'&&r.stage==='Lagging'))).length;
-  const defs = [['all','All'],['leading','Leading'],['confirmed','Confirmed'],['Improving','Improving'],['lagging','Lagging']];
+  const n = f => ROWS.filter(r=> f==='all'?true:f==='leading'?r.leading:r.verdict===f).length;
+  const defs = [['all','All'],['Strong','Strong'],['Positive','Positive'],['Neutral','Neutral'],['Avoid','Avoid'],['leading','Price-Leading']];
   $('#filters').innerHTML = defs.map(d=>`<button class="chip ${FILTER===d[0]?'on':''}" data-f="${d[0]}">${d[1]} · ${n(d[0])}</button>`).join('');
   $$('#filters .chip').forEach(b => b.onclick = () => { FILTER=b.dataset.f; renderFilters(); renderRows(); });
 }
@@ -205,9 +210,9 @@ $('#scanBtn').onclick = scan;
 // drawer
 async function openDetail(k){
   const row = ROWS.find(r=>r.index===k); CUR_THEME = k;
-  $('#dTitle').innerHTML = `${esc(row.label)} <span class="badge b-${row.stage}">${row.stage}</span>${row.confirmed?' <span class="badge b-conf">confirmed</span>':''}`;
-  $('#dMeta').textContent = `Score ${row.score.toFixed(0)} · 4-week change ${row.accel>0?'+':''}${row.accel.toFixed(0)}`;
-  $('#dHl').textContent='Not loaded.'; $('#dFu').textContent='Not loaded.'; $('#drawer').classList.add('on');
+  $('#dTitle').innerHTML = `${esc(row.label)} <span class="badge b-${row.verdict}">${row.verdict}</span> <span class="badge b-${row.stage}">${row.stage}</span>`;
+  $('#dMeta').textContent = `Conviction ${row.conviction.toFixed(0)} = price ${row.score.toFixed(0)} + earnings ${row.earn==null?'n/a (price-only)':row.earn.toFixed(0)} · 4-week change ${row.accel>0?'+':''}${row.accel.toFixed(0)}`;
+  $('#dHl').textContent='Not loaded.'; $('#dFu').textContent='Not loaded.'; $('#drawer').classList.add('on'); runVerify(k);
   $('#dTbl tbody').innerHTML = '<tr><td class="dim">loading…</td></tr>';
   try{
     const d = await api('/api/detail', {...params(), theme:k});
@@ -216,8 +221,19 @@ async function openDetail(k){
   }catch(e){ $('#dTbl tbody').innerHTML = `<tr><td class="neg">${esc(e.message)}</td></tr>`; }
 }
 let CUR_THEME = null;
+async function runVerify(k){
+  $('#dVf').innerHTML = '<span class="spin"></span> gathering live evidence (valuation, revisions, headlines, macro)…';
+  try{
+    const d = await api('/api/verify', {...params(), theme:k}); if(k!==CUR_THEME) return;
+    const ic = {pass:'✓',fail:'✗',na:'–'};
+    const tagc = t => t==='validated' ? 'tag v' : 'tag';
+    const sm = Object.entries(d.summary).map(([t,v])=>`<span class="${tagc(t)}">${t}: ${v.passed}/${v.total}</span>`).join(' ');
+    $('#dVf').innerHTML = `<p class="meta">${sm}</p>` + d.checks.map(c=>`<div class="ck"><b class="st-${c.status}">${ic[c.status]} ${c.status.toUpperCase()}</b><span>${esc(c.name)} <span class="${tagc(c.tier)}">${esc(c.tier)}</span></span><small>${esc(c.detail)}</small></div>`).join('');
+  }catch(e){ $('#dVf').innerHTML = `<span class="neg">${esc(e.message)}</span>`; }
+}
 $('#closeDrawer').onclick = () => $('#drawer').classList.remove('on');
 document.addEventListener('keydown', e => { if(e.key==='Escape') $('#drawer').classList.remove('on'); });
+$('#vfBtn').onclick = () => runVerify(CUR_THEME);
 $('#hlBtn').onclick = async () => {
   $('#dHl').innerHTML = '<span class="spin"></span>';
   try{ const d = await api('/api/headlines', {...params(), theme:CUR_THEME, n:8});

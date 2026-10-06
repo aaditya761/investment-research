@@ -37,7 +37,7 @@ def fetch_news(queries: dict[str, str], start="20190101000000", end=None, refres
     return out
 
 
-def fetch_analyst_actions(tickers: list[str], refresh=False) -> pd.DataFrame:
+def fetch_analyst_actions(tickers: list[str], refresh=False, cache_only=False) -> pd.DataFrame:
     """Dated analyst up/downgrades per stock (yfinance). Returns long frame: date, ticker, action."""
     import yfinance as yf
 
@@ -47,6 +47,8 @@ def fetch_analyst_actions(tickers: list[str], refresh=False) -> pd.DataFrame:
         f = ALT / "analyst" / f"{t.replace('^', '_')}.csv"
         if f.exists() and not refresh:
             df = pd.read_csv(f, parse_dates=["date"]) if f.stat().st_size > 5 else None
+        elif cache_only:
+            df = None
         else:
             df = None
             try:
@@ -205,6 +207,7 @@ def add_earnings_columns(df: pd.DataFrame, earn: pd.DataFrame, themes: dict, aso
     df = df.copy()
     df["surp"] = ef.surp.reindex(df.index)
     df["beat"] = ef.beat.reindex(df.index)
+    df["surp_chg"] = ef.surp_chg.reindex(df.index)
     df["confirmed"] = df.leading & (df.surp.rank(pct=True) > 0.5)
     return df
 

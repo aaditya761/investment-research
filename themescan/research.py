@@ -99,3 +99,25 @@ def report(hist: pd.DataFrame, split: str = "2023-01-01", horizon: int = 63, val
                   pd.DataFrame({"current": eval_mask(v, current_rule(v)), "best_train": eval_mask(v, make_rule(**p)(v)),
                                 "all": eval_mask(v, pd.Series(True, index=v.index))}).T.round(3).to_string()]
     return "\n".join(lines)
+
+
+def blend_report(hist: pd.DataFrame, earn_feat: pd.DataFrame, weights=(0, 0.3, 0.5, 0.7, 1.0), split="2023-01-01", horizon=63) -> str:
+    """How does mixing the earnings composite into the price score change out-of-sample ranking power?
+
+    Per weight: rank-IC (and overlap-adjusted t) plus top-quintile alpha and top-minus-bottom spread, train vs test.
+    """
+    d = prepare(hist, horizon).merge(earn_feat, on=["theme", "date"], how="left")
+    pc = lambda c: d.groupby("date")[c].rank(pct=True)
+    e = (0.5 * pc("surp") + 0.3 * pc("beat") + 0.2 * pc("surp_chg").fillna(0.5)).where(d.surp.notna())
+    rows = []
+    for w in weights:
+        d["c"] = np.where(e.notna(), w * e + (1 - w) * d.score / 100, d.score / 100) if w < 1 else e
+        d["rk"] = d.groupby("date").c.rank(pct=True, method="first")
+        for per, x in (("train", d[d.date < split]), ("test", d[d.date >= split])):
+            x = x[x.c.notna()]
+            ic = x.groupby("date").apply(lambda g: g.c.rank().corr(g.alpha.rank()) if g.c.nunique() > 2 else np.nan, include_groups=False).dropna()
+            top, bot = x[x.rk >= 0.8], x[x.rk <= 0.2]
+            sp = (top.groupby("date").alpha.mean() - bot.groupby("date").alpha.mean()).dropna()
+            rows.append(dict(w_earn=w, period=per, ic=ic.mean(), t=ic.mean() / (ic.std() / np.sqrt(len(ic) / 12.6)),
+                             top20_alpha_pct=100 * top.alpha.mean(), top_minus_bottom_pct=100 * sp.mean()))
+    return pd.DataFrame(rows).round(3).to_string(index=False)

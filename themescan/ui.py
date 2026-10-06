@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from . import altdata, scoring, synthetic
+from . import altdata, scoring, synthetic, verify
 from .config import load_config
 from .data import load_prices
 
@@ -89,7 +89,7 @@ def api_config(_p):
     return dict(universes=out, hist=hist_files(), demo_available=True)
 
 
-def api_scan(p):
+def _scan(p):
     cfg, close, vol, missing = panel(p)
     asof = p.get("asof") or ""
     if asof and not DATE.match(asof):
@@ -97,22 +97,25 @@ def api_scan(p):
     end = close.index.searchsorted(pd.Timestamp(asof), side="right") if asof else len(close)
     if end < 300:
         raise ValueError("not enough price history before that date")
-    df, _ = scoring.scan(close, vol, close[cfg.benchmark], cfg.themes, end)
-    note = None
-    earn_dir = ROOT / "data/alt/earnings"
-    if p.get("fundamentals", True) and not p.get("demo"):
-        if earn_dir.exists() and any(earn_dir.iterdir()):
-            earn = altdata.fetch_earnings(_stocks(cfg), cache_only=True)
-            if len(earn):
-                df = altdata.add_earnings_columns(df, earn, cfg.themes, close.index[end - 1])
-        else:
-            note = "Earnings data not downloaded yet: use Data & jobs > Download data to enable the 'confirmed' flag."
+    df, note = verify.full_scan(cfg, close, vol, end, fundamentals=bool(p.get("fundamentals", True)) and not p.get("demo"))
+    return cfg, close, end, df, note, missing
+
+
+def api_scan(p):
+    cfg, close, end, df, note, missing = _scan(p)
     df["label"] = [cfg.themes[k].label for k in df.index]
-    df["etfs"] = [len(cfg.themes[k].etfs) for k in df.index]
-    df["stocks"] = [len(cfg.themes[k].stocks) for k in df.index]
-    cols = ["label", "n", "score", "accel", "stage", "leading", "rs", "r3m", "d200", "breadth200", "ext", "rsi", "volr", "leaders"]
-    cols += [c for c in ("surp", "beat", "confirmed") if c in df]
+    cols = ["label", "n", "conviction", "verdict", "score", "earn", "earn_covered", "accel", "stage", "leading", "rs", "r3m", "d200",
+            "breadth200", "ext", "rsi", "volr", "surp", "beat", "surp_chg", "leaders"]
     return dict(asof=str(close.index[end - 1].date()), benchmark=cfg.benchmark, missing=missing, note=note, rows=_records(df[cols]))
+
+
+def api_verify(p):
+    cfg, close, end, df, note, _ = _scan(p)
+    k = p["theme"]
+    if k not in cfg.themes:
+        raise ValueError("unknown theme")
+    checks = verify.gather_live(cfg, close, k, end, df.loc[k], live=not p.get("demo"))
+    return dict(theme=k, checks=checks, summary=verify.summarize(checks), conviction=_clean(df.loc[k].conviction), verdict=df.loc[k].verdict)
 
 
 def api_detail(p):
@@ -226,7 +229,7 @@ def job_cancel(jid: str) -> dict:
 
 
 # ---------- HTTP ----------
-ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
+ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
 
 
 class Handler(BaseHTTPRequestHandler):

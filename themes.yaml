@@ -16,6 +16,7 @@ events:
 themes:
   crypto:
     label: Crypto
+    use_earnings: false   # miners / MSTR EPS is bitcoin mark-to-market noise
     etfs: [IBIT, ETHA]
     stocks: [BTC-USD, ETH-USD, SOL-USD, COIN, MSTR, MARA, RIOT, CLSK]
   gold:

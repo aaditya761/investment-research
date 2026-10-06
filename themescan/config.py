@@ -10,6 +10,7 @@ class Theme:
     label: str
     etfs: list[str] = field(default_factory=list)
     stocks: list[str] = field(default_factory=list)
+    use_earnings: bool = True  # False for baskets whose EPS is accounting noise (e.g. crypto mark-to-market)
 
     @property
     def tickers(self) -> list[str]:
@@ -33,7 +34,7 @@ class Config:
 def load_config(path: str | Path = "themes.yaml") -> Config:
     raw = yaml.safe_load(Path(path).read_text())
     themes = {
-        k: Theme(k, v.get("label", k), [str(x) for x in v.get("etfs", [])], [str(x) for x in v.get("stocks", [])])
+        k: Theme(k, v.get("label", k), [str(x) for x in v.get("etfs", [])], [str(x) for x in v.get("stocks", [])], bool(v.get("use_earnings", True)))
         for k, v in raw["themes"].items()
     }
     return Config(str(raw.get("benchmark", "ACWI")), themes, raw.get("events", []))
