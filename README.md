@@ -40,6 +40,22 @@ sectors. Alpha = 63-day forward return minus the same-date average theme. Train 
 - Extension filters and acceleration made results *worse*; a grid search over rule thresholds found nothing that
   held out of sample.
 
+## Looking for *early* signals (what was tried)
+
+Goal: be early in a run rather than late. Each idea was tested the same way (alpha vs same-date average theme,
+train < 2023 / test >= 2023, overlap-adjusted t-stats). **None produced a robust edge:**
+
+| Idea | Source | Result |
+|---|---|---|
+| Trend age (bars since crossing above 200d), early vs late stage | prices | sign flips between train and test |
+| Fresh-breakout / not-extended filters, accel, squeeze, volume | prices | no edge, filters made it worse |
+| Analyst upgrades/downgrades (level and 90d change) | Yahoo, 96 stocks | IC ~0; upgrades trail price |
+| Wikipedia pageview attention (level / spike / change) | Wikimedia, 26 themes | IC t < 1.2; crowded-vs-quiet flips sign |
+| GDELT news volume (spike / change) | GDELT, 9 themes only (rate-limited) | IC t < 0.6; low power |
+
+Tooling kept for further work: `altfetch` (download alt data into `data/alt/`), `research` (IC + rule search),
+and `headlines` (live Google News headlines for Leading themes as a *manual catalyst check*, not backtestable).
+
 ## Caveats
 
 - Scores are *relative* across your universe; a broad bear market still produces a "top" theme.

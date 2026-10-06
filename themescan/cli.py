@@ -76,6 +76,45 @@ def cmd_research(args):
     print(research.report(hist, split=args.split, horizon=args.horizon, validate=val))
 
 
+def cmd_altfetch(args):
+    import yaml
+
+    from . import altdata
+
+    cfg = load_config(args.themes)
+    q = yaml.safe_load(open(args.queries))
+    if not args.skip_news:
+        n = altdata.fetch_news({k: v for k, v in q.items() if k in cfg.themes}, refresh=args.refresh)
+        print(f"news: {len(n)} themes")
+    if args.skip_analyst:
+        return
+    stocks = sorted({t for th in cfg.themes.values() for t in th.stocks if not t.startswith("^") and "-USD" not in t})
+    a = altdata.fetch_analyst_actions(stocks, refresh=args.refresh)
+    print(f"analyst: {a.ticker.nunique()} tickers, {len(a)} actions")
+
+
+def cmd_headlines(args):
+    import yaml
+
+    from . import altdata
+
+    cfg = load_config(args.themes)
+    queries = yaml.safe_load(open(args.queries))
+    keys = args.theme
+    if not keys:
+        close, vol = _load(args, cfg)
+        df, _ = scoring.scan(close, vol, close[cfg.benchmark], cfg.themes)
+        keys = list(df[df.leading].index)
+    print("Live headlines (catalyst check only: not backtestable; tone is a crude keyword count)\n")
+    for k in keys:
+        items, total = altdata.headlines(queries.get(k, cfg.themes[k].label), n=args.n)
+        tone = sum(i["tone"] for i in items)
+        print(f"## {cfg.themes[k].label} ({k}): {total} stories in 14d, tone {tone:+d} over top {len(items)}")
+        for i in items:
+            print(f"  {i['date']}  {i['title'][:110]}")
+        print()
+
+
 def main(argv=None):
     warnings.filterwarnings("ignore")
     p = argparse.ArgumentParser(prog="themescan")
@@ -96,6 +135,16 @@ def main(argv=None):
     b.add_argument("--bt-end")
     b.add_argument("--step", type=int, default=5, help="bars between scans")
     b.set_defaults(fn=cmd_backtest)
+    f = sub.add_parser("altfetch", help="download news-attention and analyst-action history into data/alt/")
+    f.add_argument("--queries", default="news_queries.yaml")
+    f.add_argument("--skip-news", action="store_true")
+    f.add_argument("--skip-analyst", action="store_true")
+    f.set_defaults(fn=cmd_altfetch)
+    hd = sub.add_parser("headlines", help="live news headlines for leading themes (catalyst check)")
+    hd.add_argument("--theme", nargs="*", help="theme keys (default: all currently Leading)")
+    hd.add_argument("--queries", default="news_queries.yaml")
+    hd.add_argument("--n", type=int, default=5)
+    hd.set_defaults(fn=cmd_headlines)
     r = sub.add_parser("research", help="signal IC + rule search on a backtest CSV")
     r.add_argument("hist", help="CSV from `backtest --csv`")
     r.add_argument("--validate", help="CSV from another universe for out-of-universe check")
