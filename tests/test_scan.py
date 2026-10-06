@@ -19,8 +19,8 @@ def world():
 def test_planted_runs_rank_top_and_get_flagged(world):
     cfg, close, vol = world
     df, _ = scoring.scan(close, vol, close[cfg.benchmark], cfg.themes)
-    assert {"gold", "korea"} <= set(df.index[:6])
-    assert df.loc["gold", "stage"] in ("Early trend", "Basing", "Extended")
+    assert df.loc[["gold", "korea"], "leading"].all()
+    assert bool(df.loc["gold", "leading"])
     assert df.loc["gold", "score"] > df.score.median()
 
 
@@ -38,7 +38,7 @@ def test_no_lookahead(world):
 def test_walk_forward_shape(world):
     cfg, close, vol = world
     h = backtest.walk_forward(close, vol, close[cfg.benchmark], cfg.themes, start="2026-01-01", step=20)
-    assert {"theme", "stage", "prepping", "fwd_excess"} <= set(h.columns)
+    assert {"theme", "stage", "leading", "fwd_excess"} <= set(h.columns)
     assert h.theme.nunique() == len(cfg.themes)
     assert not backtest.summarize(h).empty
 

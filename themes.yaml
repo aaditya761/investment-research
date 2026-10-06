@@ -106,3 +106,37 @@ themes:
     label: Cybersecurity
     etfs: [CIBR, HACK]
     stocks: [CRWD, PANW, ZS, FTNT]
+
+  # --- control themes: unfashionable / non-bull areas, so the backtest can see misses and false alarms ---
+  staples:
+    label: US staples (control)
+    etfs: [XLP, VDC]
+    stocks: [PG, KO, PEP, WMT, COST]
+  reits:
+    label: US REITs (control)
+    etfs: [VNQ, XLRE]
+    stocks: [PLD, O, AMT, EQIX]
+  us_healthcare:
+    label: US healthcare (control)
+    etfs: [XLV, IHF]
+    stocks: [UNH, JNJ, ABT, TMO]
+  clean_energy:
+    label: Solar & clean energy (control)
+    etfs: [TAN, ICLN, LIT]
+    stocks: [ENPH, FSLR, PLUG, SEDG]
+  long_bonds:
+    label: Long US bonds (control)
+    etfs: [TLT, IEF, LQD, HYG]
+    stocks: []
+  indonesia:
+    label: Indonesia (control)
+    etfs: [EIDO]
+    stocks: ["^JKSE", BBCA.JK, BBRI.JK, TLKM.JK]
+  turkey_safrica:
+    label: Turkey & South Africa (control)
+    etfs: [TUR, EZA]
+    stocks: [THYAO.IS, AKBNK.IS, NPN.JO]
+  consumer_disc:
+    label: US consumer discretionary (control)
+    etfs: [XLY, XRT]
+    stocks: [HD, MCD, NKE, SBUX]

@@ -5,10 +5,13 @@ import pandas as pd
 from .config import Theme
 from .signals import ticker_metrics
 
-# Relative weights of the score components (percentile ranks across themes).
-WEIGHTS = dict(rs=0.30, trend=0.15, breadth=0.25, volume=0.10, coil=0.10, high=0.10)
-ACCEL_BARS = 20  # score change measured over ~4 weeks
-EXT_Z, EXT_RSI = 2.0, 78
+# Score = weighted percentile ranks across themes. Weights chosen by walk-forward research (see README):
+# the rising 200d trend was the only signal with a consistent edge across universes and periods;
+# breadth, volume, squeeze and near-high added nothing, so they are reported but not scored.
+WEIGHTS = dict(slope=0.5, rs=0.3, d200=0.2)
+ACCEL_BARS = 20  # score change measured over ~4 weeks (descriptive only)
+EXT_Z, EXT_RSI = 2.0, 78  # "extended" label thresholds (descriptive only)
+LEAD, LAG = 60, 30  # score cut-offs for the Leading / Lagging stages
 
 
 def aggregate(tm: pd.DataFrame, themes: dict[str, Theme]) -> pd.DataFrame:
@@ -33,17 +36,8 @@ def _pct(s: pd.Series) -> pd.Series:
 
 
 def score(df: pd.DataFrame) -> pd.Series:
-    comp = dict(
-        rs=_pct(df.rs),
-        trend=(_pct(df.d200) + _pct(df.slope200)) / 2,
-        breadth=(_pct(df.breadth50) + _pct(df.breadth200) + _pct(df.at_high)) / 3,
-        volume=_pct(df.volr),
-        coil=_pct(df.coil),
-        high=_pct(df.nh),
-    )
-    raw = sum(WEIGHTS[k] * v for k, v in comp.items()) / sum(WEIGHTS.values())
-    penalty = ((df.ext.fillna(0) - EXT_Z) / 2).clip(0, 1) * 15  # blow-off penalty, up to 15 points
-    return (100 * raw - penalty).clip(0, 100)
+    comp = dict(slope=_pct(df.slope200), rs=_pct(df.rs), d200=_pct(df.d200))
+    return 100 * sum(WEIGHTS[k] * v for k, v in comp.items()) / sum(WEIGHTS.values())
 
 
 def score_asof(close, volume, bench, themes, end: int | None = None):
@@ -56,17 +50,16 @@ def score_asof(close, volume, bench, themes, end: int | None = None):
 
 
 def classify(df: pd.DataFrame) -> pd.DataFrame:
+    """Stages. `leading` (score >= LEAD) is the validated flag; Improving/Extended are descriptive labels."""
     df = df.copy()
     ext = (df.ext > EXT_Z) | (df.rsi > EXT_RSI)
-    hi = df.score >= 55
-    early = (df.score >= 60) & (df.breadth200 >= 0.5) & (df.d200 > 0)
-    basing = (df.score >= 40) & (df.accel > 0) & (df.nh > -0.20)
+    lead = df.score >= LEAD
     df["stage"] = np.select(
-        [ext & hi, hi & (df.accel <= -8), early, basing],
-        ["Extended", "Rolling over", "Early trend", "Basing"],
-        default="Dormant",
+        [lead & ext, lead, df.score <= LAG, (df.score >= 40) & (df.accel > 0)],
+        ["Extended", "Leading", "Lagging", "Improving"],
+        default="Neutral",
     )
-    df["prepping"] = df.stage.isin(["Basing", "Early trend"]) & (df.accel > 0)
+    df["leading"] = lead
     return df
 
 

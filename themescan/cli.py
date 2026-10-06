@@ -25,7 +25,7 @@ def _load(args, cfg):
 def _fmt(df):
     t = pd.DataFrame(index=df.index)
     t["score"], t["4w_chg"], t["stage"] = df.score.round(0), df.accel.round(0), df.stage
-    t["prep"] = df.prepping.map({True: "YES", False: ""})
+    t["lead"] = df.leading.map({True: "YES", False: ""})
     t["rel_str%"] = (df.rs * 100).round(1)
     t["3m%"] = (df.r3m * 100).round(0)
     t[">200d"] = (df.breadth200 * 100).round(0)
@@ -41,9 +41,11 @@ def cmd_scan(args):
     end = len(close) if not args.asof else close.index.searchsorted(pd.Timestamp(args.asof), side="right")
     df, tm = scoring.scan(close, vol, close[cfg.benchmark], cfg.themes, end)
     print(f"As of {close.index[end - 1].date()} | benchmark {cfg.benchmark} | {len(df)} themes\n")
-    prep = df[df.prepping]
-    print("== PREPPING UP (Basing / Early trend with rising score) ==")
-    print(_fmt(prep).to_string() if len(prep) else "none")
+    lead, lag = df[df.leading], df[df.stage == "Lagging"]
+    print(f"== LEADING (score >= {scoring.LEAD}: rising 200d trend + relative strength; 'Extended' = already stretched) ==")
+    print(_fmt(lead).to_string() if len(lead) else "none")
+    print(f"\n== LAGGING (score <= {scoring.LAG}: the most reliable signal in the backtest is to avoid these) ==")
+    print(_fmt(lag).to_string() if len(lag) else "none")
     print("\n== ALL THEMES ==")
     print(_fmt(df).to_string())
     if args.detail:
@@ -60,10 +62,18 @@ def cmd_backtest(args):
     hist = bt.walk_forward(close, vol, close[cfg.benchmark], cfg.themes, args.bt_start, args.bt_end, step=args.step)
     print(f"Walk-forward {hist.date.min().date()} -> {hist.date.max().date()}, forward window {bt.FWD} bars, excess vs {cfg.benchmark}\n")
     print(bt.summarize(hist).round(3).to_string())
-    print("\n== Known runs: lead time of first PREPPING flag ==")
+    print("\n== Known runs: lead time of first LEADING flag ==")
     print(bt.event_lead_times(hist, cfg.events).to_string(index=False))
     if args.csv:
         hist.to_csv(args.csv, index=False)
+
+
+def cmd_research(args):
+    from . import research
+
+    hist = pd.read_csv(args.hist)
+    val = pd.read_csv(args.validate) if args.validate else None
+    print(research.report(hist, split=args.split, horizon=args.horizon, validate=val))
 
 
 def main(argv=None):
@@ -86,5 +96,11 @@ def main(argv=None):
     b.add_argument("--bt-end")
     b.add_argument("--step", type=int, default=5, help="bars between scans")
     b.set_defaults(fn=cmd_backtest)
+    r = sub.add_parser("research", help="signal IC + rule search on a backtest CSV")
+    r.add_argument("hist", help="CSV from `backtest --csv`")
+    r.add_argument("--validate", help="CSV from another universe for out-of-universe check")
+    r.add_argument("--split", default="2023-01-01")
+    r.add_argument("--horizon", type=int, default=63)
+    r.set_defaults(fn=cmd_research)
     args = p.parse_args(argv)
     args.fn(args)
