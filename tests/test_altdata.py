@@ -24,3 +24,13 @@ def test_analyst_features_net_upgrades():
     themes = {"t": Theme("t", "T", [], ["AAA", "BBB"])}
     f = altdata.analyst_features(acts, themes, pd.DatetimeIndex(["2023-01-20"]))
     assert f.net_upgr.iloc[0] == (2 - 1) / 2  # time-of-day must not break the daily alignment
+
+
+def test_earnings_features_no_lookahead():
+    earn = pd.DataFrame({
+        "date": pd.to_datetime(["2023-01-10", "2023-01-12", "2023-01-15", "2023-03-01"]),
+        "surprise": [10.0, 20.0, -5.0, 99.0], "ticker": ["A", "B", "C", "A"],
+    })
+    themes = {"t": Theme("t", "T", [], ["A", "B", "C"])}
+    f = altdata.earnings_features(earn, themes, pd.DatetimeIndex(["2023-01-20"]))
+    assert f.surp.iloc[0] == 10.0 and f.beat.iloc[0] == 2 / 3  # the March report must not leak in

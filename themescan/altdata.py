@@ -2,6 +2,7 @@
 import time
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import requests
 import yaml
@@ -143,3 +144,96 @@ def headlines(query: str, n: int = 6, days: int = 14) -> tuple[list[dict], int]:
         out.append(dict(title=title, date=(it.findtext("pubDate") or "")[5:16], source=it.findtext("source") or "",
                         tone=sum(w in low for w in _POS) - sum(w in low for w in _NEG)))
     return out[:n], len(items)
+
+
+def fetch_earnings(tickers: list[str], refresh=False) -> pd.DataFrame:
+    """Dated EPS estimate / reported / surprise% per stock (yfinance get_earnings_dates)."""
+    import yfinance as yf
+
+    (ALT / "earnings").mkdir(parents=True, exist_ok=True)
+    frames = []
+    for t in tickers:
+        f = ALT / "earnings" / f"{t.replace('^', '_')}.csv"
+        if f.exists() and not refresh:
+            df = pd.read_csv(f, parse_dates=["date"]) if f.stat().st_size > 5 else None
+        else:
+            df = None
+            try:
+                e = yf.Ticker(t).get_earnings_dates(limit=48)
+                if e is not None and len(e):
+                    e = e.reset_index()
+                    e.columns = ["date", "estimate", "reported", "surprise"]
+                    e["date"] = pd.to_datetime(e["date"], utc=True).dt.tz_localize(None).dt.normalize()
+                    df = e.dropna(subset=["reported"])
+            except Exception:
+                pass
+            (df if df is not None else pd.DataFrame(columns=["date", "estimate", "reported", "surprise"])).to_csv(f, index=False)
+            time.sleep(0.4)
+        if df is not None and len(df):
+            df = df.copy()
+            df["ticker"] = t
+            frames.append(df)
+    return pd.concat(frames) if frames else pd.DataFrame(columns=["date", "estimate", "reported", "surprise", "ticker"])
+
+
+def earnings_features(earn: pd.DataFrame, themes: dict, dates: pd.DatetimeIndex, window=120) -> pd.DataFrame:
+    """Per theme and date: median EPS surprise % and share of beats among reports in the trailing window, plus
+    the change vs the previous window. Reports are timestamped on the day they were released (no look-ahead)."""
+    e = earn.dropna(subset=["surprise"]).copy()
+    e["surprise"] = e.surprise.clip(-100, 100)
+    rows = []
+    for key, th in themes.items():
+        sub = e[e.ticker.isin(th.tickers)]
+        if sub.ticker.nunique() < 3:
+            continue
+        for d in dates:
+            cur = sub[(sub.date <= d) & (sub.date > d - pd.Timedelta(days=window))]
+            prev = sub[(sub.date <= d - pd.Timedelta(days=window)) & (sub.date > d - pd.Timedelta(days=2 * window))]
+            if len(cur) < 3:
+                continue
+            rows.append(dict(theme=key, date=d, surp=cur.surprise.median(), beat=(cur.surprise > 0).mean(),
+                             surp_chg=cur.surprise.median() - prev.surprise.median() if len(prev) >= 3 else np.nan,
+                             n_rep=len(cur)))
+    return pd.DataFrame(rows)
+
+
+def add_earnings_columns(df: pd.DataFrame, earn: pd.DataFrame, themes: dict, asof: pd.Timestamp) -> pd.DataFrame:
+    """Add surp / beat columns and the `confirmed` flag (Leading and in the top half of themes by EPS surprise)."""
+    ef = earnings_features(earn, themes, pd.DatetimeIndex([asof])).set_index("theme")
+    df = df.copy()
+    df["surp"] = ef.surp.reindex(df.index)
+    df["beat"] = ef.beat.reindex(df.index)
+    df["confirmed"] = df.leading & (df.surp.rank(pct=True) > 0.5)
+    return df
+
+
+def snapshot(tickers: list[str], cache_hours=20) -> pd.DataFrame:
+    """Live valuation / growth / estimate-revision snapshot per stock (current only, not backtestable)."""
+    import time as _t
+
+    import yfinance as yf
+
+    f = ALT / "snapshot.csv"
+    if f.exists() and (_t.time() - f.stat().st_mtime) / 3600 < cache_hours:
+        cached = pd.read_csv(f, index_col=0)
+        if set(tickers) <= set(cached.index):
+            return cached.loc[tickers]
+    rows = {}
+    for t in tickers:
+        try:
+            tk = yf.Ticker(t)
+            i = tk.info
+            rv = tk.eps_revisions
+            up = dn = np.nan
+            if rv is not None and len(rv) and "0y" in rv.index:
+                up, dn = rv.loc["0y", "upLast30days"], rv.loc["0y", "downLast30days"]
+            px, tgt = i.get("currentPrice"), i.get("targetMeanPrice")
+            rows[t] = dict(fwd_pe=i.get("forwardPE"), rev_g=i.get("revenueGrowth"), eps_g=i.get("earningsGrowth"),
+                           upside=(tgt / px - 1) if px and tgt else np.nan, rev_bal=(up - dn) / max(up + dn, 1) if up == up else np.nan)
+        except Exception:
+            pass
+        _t.sleep(0.3)
+    df = pd.DataFrame.from_dict(rows, orient="index")
+    ALT.mkdir(parents=True, exist_ok=True)
+    df.to_csv(f)
+    return df

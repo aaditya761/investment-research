@@ -52,6 +52,16 @@ train < 2023 / test >= 2023, overlap-adjusted t-stats). **None produced a robust
 | Analyst upgrades/downgrades (level and 90d change) | Yahoo, 96 stocks | IC ~0; upgrades trail price |
 | Wikipedia pageview attention (level / spike / change) | Wikimedia, 26 themes | IC t < 1.2; crowded-vs-quiet flips sign |
 | GDELT news volume (spike / change) | GDELT, 9 themes only (rate-limited) | IC t < 0.6; low power |
+| Macro-driver tailwind (rolling betas to dollar, yields, curve, VIX, oil, copper, gold, credit, FX x 13w factor move) | Yahoo | IC -0.02, non-monotonic quintiles: no edge |
+| **Earnings surprise** (median EPS surprise % of reports in the last 120d) | Yahoo, 120 stocks | **IC +0.08, t 2.9; top-fifth minus bottom-fifth positive in 8 of 8 years; survives dropping any one theme.** Weak on India sectors (t 1.1, flips in test). |
+
+The one validated improvement: among Leading themes, those also in the top half by EPS surprise had +1.7% (train) / +2.7% (test)
+quarterly alpha vs -0.5% / -0.5% for Leading themes with weak surprises. `scan` shows this as `confirmed`. Caveats: strongest in
+memory / energy / crypto-adjacent baskets (the 2019-26 winners, so survivorship flatters it); crypto EPS is mark-to-market noise;
+surprises are only visible after reports, so this confirms a run rather than predicting it.
+
+Also available: `fundamentals` prints a live (non-backtestable) snapshot: forward P/E, growth, upside to analyst targets and
+the balance of FY EPS estimate revisions.
 
 Tooling kept for further work: `altfetch` (download alt data into `data/alt/`), `research` (IC + rule search),
 and `headlines` (live Google News headlines for Leading themes as a *manual catalyst check*, not backtestable).
