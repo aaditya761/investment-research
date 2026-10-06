@@ -28,7 +28,7 @@ themes:
   it_services:
     label: IT services
     etfs: [^CNXIT, ITBEES.NS]
-    stocks: [TCS.NS, INFY.NS, HCLTECH.NS, WIPRO.NS, TECHM.NS, LTIM.NS, PERSISTENT.NS, COFORGE.NS]
+    stocks: [TCS.NS, INFY.NS, HCLTECH.NS, WIPRO.NS, TECHM.NS, LTM.NS, PERSISTENT.NS, COFORGE.NS]
   pharma:
     label: Pharma
     etfs: [^CNXPHARMA, PHARMABEES.NS]
@@ -39,7 +39,7 @@ themes:
   auto:
     label: Autos
     etfs: [^CNXAUTO]
-    stocks: [MARUTI.NS, M&M.NS, TATAMOTORS.NS, BAJAJ-AUTO.NS, EICHERMOT.NS, HEROMOTOCO.NS, TVSMOTOR.NS]
+    stocks: [MARUTI.NS, M&M.NS, TMPV.NS, BAJAJ-AUTO.NS, EICHERMOT.NS, HEROMOTOCO.NS, TVSMOTOR.NS]
   fmcg:
     label: FMCG
     etfs: [^CNXFMCG]
