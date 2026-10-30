@@ -63,6 +63,23 @@ strongest signal in the walk-forward tests; earnings alone failed out of sample 
 `validated` (backtested, in the score) / `live only` (valuation, estimate revisions, analyst targets, headline tone: cannot be backtested) /
 `tested: no edge` (macro tailwind, analyst upgrades, Wikipedia attention, not-stretched filter: showed no predictive value, shown as context).
 
+## Rotation: where does money go when a complex sells off?
+
+    python -m themescan rotation                      # default source = the AI complex (AI semis, memory, Taiwan, Korea, hyperscalers, power, cloud, China internet...)
+    python -m themescan rotation --source g:energy    # any other complex; --window N, --drop PERCENT, --top N
+    (UI: Rotation tab)
+
+Money flows are not directly observable, so three price/volume lenses are combined: **residual strength** (excess return beyond what the theme's beta to the source
+explains), **net-buying pressure** (share of dollar volume on up days minus down days), and **history** (forward edge after 13 past selloffs of the same complex since 2018).
+Tested on those 13 episodes, the first two lenses did **not** predict which themes kept outperforming (rank-correlation about -0.06 to 0, positive in about half the episodes),
+so the output describes where money is going *now*, not where it will continue to go. Uses weekday-only prices.
+
+## Known limitation: calendar-day windows in the scoring framework
+
+The price panel used by `scan` / `backtest` includes weekend rows because 24/7 crypto tickers force a 7-day calendar, so windows labelled "200d", "63 bars", "21 bars"
+are really ~200 / 63 / 21 *calendar* days (about 140 / 43 / 15 trading days). The backtests are internally consistent under that definition, but the labels are loose.
+`rotation` already uses weekday-only data. Switching the main framework to trading days would require re-running and re-validating all results.
+
 ## Reality check: how to use it (portfolio tests, `portfolio` command)
 
 Three universes: the hand-picked global themes, India sectors, and a **broad rule-based ETF universe** (`themes_broad.yaml`, 95 themes including faded

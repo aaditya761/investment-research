@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from . import altdata, scoring, synthetic, verify
+from . import altdata, rotation, scoring, synthetic, verify
 from .config import load_config
 from .data import load_prices
 
@@ -116,6 +116,30 @@ def api_verify(p):
         raise ValueError("unknown theme")
     checks = verify.gather_live(cfg, close, k, end, df.loc[k], live=not p.get("demo"))
     return dict(theme=k, checks=checks, summary=verify.summarize(checks), conviction=_clean(df.loc[k].conviction), verdict=df.loc[k].verdict)
+
+
+_ROT: dict = {}
+
+
+def api_rotation(p):
+    key = (bool(p.get("offline")), tuple(p.get("source") or ()), float(p.get("drop", 10)), int(p.get("window", 20)))
+    hit = _ROT.get(key)
+    if hit and time.time() - hit[0] < 600:
+        return hit[1]
+    cfgs = {"g": load_config(ROOT / "themes.yaml"), "b": load_config(ROOT / "themes_broad.yaml")}
+    close, vol, _ = load_prices(sorted(set(cfgs["g"].all_tickers) | set(cfgs["b"].all_tickers)), start="2018-01-01", cache_dir=ROOT / "data/cache", offline=key[0])
+    close, vol = rotation.weekdays(close, vol)
+    themes = rotation.merge_universes(cfgs)
+    src = [k for k in (p.get("source") or rotation.AI_SOURCE) if k in themes]
+    out = rotation.analyze(close, vol, themes, "ACWI", src, drop=-abs(key[2]) / 100, window=key[3])
+    t = out["table"].copy()
+    t["label"] = [rotation.label(k, themes) for k in t.index]
+    cols = ["label", "group", "ret", "excess", "resid", "flow", "vol_ratio", "beta", "corr_ai", "episodes", "hist_edge", "hist_hit", "signals"]
+    ca = t[t.index.isin(rotation.CROSS_ASSET)]
+    res = dict(asof=str(close.index[-1].date()), info=out["info"], rows=_records(t[cols]), groups=_records(out["groups"]), cross=_records(ca[cols]),
+               themes={k: v.label for k, v in themes.items()})
+    _ROT[key] = (time.time(), res)
+    return res
 
 
 def api_detail(p):
@@ -239,7 +263,7 @@ def job_cancel(jid: str) -> dict:
 
 
 # ---------- HTTP ----------
-ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
+ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/rotation": api_rotation, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
 
 
 class Handler(BaseHTTPRequestHandler):

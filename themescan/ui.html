@@ -89,6 +89,7 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
 <main>
   <div class="tabs">
     <button class="tab on" data-tab="scan">Scan</button>
+    <button class="tab" data-tab="rot">Rotation</button>
     <button class="tab" data-tab="jobs">Data &amp; jobs</button>
     <button class="tab" data-tab="help">Help</button>
   </div>
@@ -99,6 +100,16 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
     <p class="meta" id="scanMeta">Press <b>Scan</b> to rank the themes. The first run downloads prices and can take a minute.</p>
     <div id="scanNote"></div>
     <div class="wrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="panel" id="p-rot">
+    <div class="row"><b>Where is money going when AI sells off?</b><button class="primary" id="rotBtn">Run rotation analysis</button><span id="rotStatus" class="dim"></span></div>
+    <p class="meta">Money flows can't be observed directly, so this infers them: which themes beat what their AI exposure explains ("residual strength"), where dollar volume is net buying, and what followed past AI selloffs. Uses cached prices; weekdays only.</p>
+    <div id="rotErr"></div><div id="rotSummary"></div>
+    <h4 class="meta" style="margin-top:16px">Where it is going now</h4><div class="wrap"><table id="rotTbl"></table></div>
+    <h4 class="meta" style="margin-top:16px">By asset group</h4><div class="wrap" style="max-width:640px"><table id="rotGrp"></table></div>
+    <h4 class="meta" style="margin-top:16px">Safe-haven check</h4><div class="wrap" style="max-width:760px"><table id="rotCross"></table></div>
+    <div id="rotVal"></div>
   </section>
 
   <section class="panel" id="p-jobs">
@@ -251,6 +262,26 @@ $('#fuBtn').onclick = async () => {
     $('#dFu').innerHTML = '<div class="wrap"><table><thead><tr><th class="l">Stock</th><th>Fwd P/E</th><th>Rev growth</th><th>EPS growth</th><th>Upside to target</th><th>Revisions</th></tr></thead><tbody>' +
       d.rows.map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.index)}</b></td><td>${fmt(r.fwd_pe,1)}</td><td>${fmt(r.rev_g,0,'%')}</td><td>${fmt(r.eps_g,0,'%')}</td><td>${fmt(r.upside,0,'%')}</td><td>${r.rev_bal==null?'–':(r.rev_bal>0?'+':'')+r.rev_bal.toFixed(1)}</td></tr>`).join('') + '</tbody></table></div><p class="meta">Revisions = (up − down FY EPS revisions, 30d) ÷ total, −1…+1. Current values only.</p>';
   }catch(e){ $('#dFu').innerHTML = `<span class="neg">${esc(e.message)}</span>`; }
+};
+
+// rotation
+const rpct = (v,d=1) => v==null ? '<span class="dim">–</span>' : `<span class="${v>0?'pos':v<0?'neg':''}">${(v*100).toFixed(d)}%</span>`;
+function rotRows(rows, n){
+  return '<thead><tr><th class="l">Theme</th><th class="l">Group</th><th>20d ret</th><th>Residual</th><th>Net buying</th><th>AI beta</th><th>Past edge (60d)</th><th>Past hit</th><th>Signals</th></tr></thead><tbody>' +
+   rows.slice(0,n).map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.label)}</b></td><td class="l dim">${esc(r.group)}</td><td>${rpct(r.ret)}</td><td>${rpct(r.resid)}</td><td class="${r.flow>0?'pos':'neg'}">${r.flow==null?'–':r.flow.toFixed(2)}</td><td>${r.beta==null?'–':r.beta.toFixed(2)}</td><td>${rpct(r.hist_edge)}</td><td>${r.hist_hit==null?'–':Math.round(r.hist_hit*100)+'%'}</td><td><b>${r.signals}</b>/3</td></tr>`).join('') + '</tbody>';
+}
+$('#rotBtn').onclick = async () => {
+  $('#rotBtn').disabled = true; $('#rotStatus').innerHTML = '<span class="spin"></span> analysing (20-40s)…'; $('#rotErr').innerHTML='';
+  try{
+    const d = await api('/api/rotation', {offline: $('#offline').checked}); const i = d.info;
+    $('#rotSummary').innerHTML = `<div class="note" style="background:var(--info-bg);color:var(--info)">As of ${d.asof}: the AI complex is <b>${(i.source_return*100).toFixed(1)}%</b> over ${i.window} trading days (${(i.source_excess*100).toFixed(1)}% vs world) and <b>${(i.drawdown*100).toFixed(1)}%</b> below its high of ${i.high_date}.</div>`;
+    $('#rotTbl').innerHTML = rotRows(d.rows, 25);
+    $('#rotGrp').innerHTML = '<thead><tr><th class="l">Group</th><th>Themes</th><th>Avg residual</th><th>Avg 20d ret</th><th>% beating AI-beta</th></tr></thead><tbody>' + d.groups.map(g=>`<tr style="cursor:default"><td class="l">${esc(g.index)}</td><td>${g.n}</td><td>${rpct(g.mean_resid)}</td><td>${rpct(g.mean_ret)}</td><td>${Math.round(g.pct_positive_resid*100)}%</td></tr>`).join('') + '</tbody>';
+    $('#rotCross').innerHTML = rotRows(d.cross.sort((a,b)=>b.resid-a.resid), 20);
+    const v=i.validation; $('#rotVal').innerHTML = `<div class="card" style="margin-top:16px"><h3>Can this predict where money goes next?</h3><p>Tested on ${i.episodes.length} past AI selloffs since 2018 (${esc(i.episodes.join(', '))}).</p><p>${[20,60].map(h=>`<b>${h} days ahead:</b> residual-strength correlation ${v[h].resid_ic.toFixed(3)} (positive in ${v[h].resid_pos}/${v[h].n} episodes); net-buying ${v[h].flow_ic.toFixed(3)} (${v[h].flow_pos}/${v[h].n})`).join('<br>')}</p><p>Values near 0 with about half the episodes positive mean today's rotation winners did <u>not</u> reliably keep winning. This shows where money is going <i>now</i>; it does not show it will continue.</p></div>`;
+    $('#rotStatus').textContent='';
+  }catch(e){ $('#rotErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; $('#rotStatus').textContent=''; }
+  $('#rotBtn').disabled = false;
 };
 
 // jobs

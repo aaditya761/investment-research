@@ -217,6 +217,49 @@ def cmd_scorelog(args):
     print(forward.score_log(panels))
 
 
+def cmd_rotation(args):
+    from . import rotation as ro
+
+    cfgs = {"g": load_config("themes.yaml"), "b": load_config("themes_broad.yaml")}
+    tick = sorted(set(cfgs["g"].all_tickers) | set(cfgs["b"].all_tickers))
+    close, vol, _ = load_prices(tick, start="2018-01-01", cache_dir=args.cache, refresh=args.refresh, offline=args.offline)
+    close, vol = ro.weekdays(close, vol)
+    themes = ro.merge_universes(cfgs)
+    src = args.source or ro.AI_SOURCE
+    out = ro.analyze(close, vol, themes, "ACWI", src, drop=-abs(args.drop) / 100, window=args.window)
+    i, t = out["info"], out["table"]
+    print(f"As of {close.index[-1].date()} | source complex: {len(src)} themes ({', '.join(src[:6])}{'...' if len(src) > 6 else ''})")
+    print(f"Source: {i['source_return'] * 100:+.1f}% over {i['window']} trading days ({i['source_excess'] * 100:+.1f}% vs world), {i['drawdown'] * 100:.1f}% below its 60-day high of {i['high_date']}\n")
+    print(f"== WHERE IT IS GOING NOW (last {i['window']} trading days) ==")
+    print("resid = excess return beyond what the theme's beta to the source explains; flow = share of dollar volume on up days minus down days (net buying proxy);")
+    print("hist = average forward 60d edge after past selloffs of this source (episodes = number of past selloffs).  signals = resid top-quartile + net buying + historically reliable.\n")
+    c = t.copy()
+    c.insert(0, "theme", [ro.label(k, themes) for k in c.index])
+    show = c[["theme", "group", "ret", "resid", "flow", "beta", "corr_ai", "hist_edge", "hist_hit", "signals"]].head(args.top).copy()
+    for col in ("ret", "resid", "hist_edge"):
+        show[col] = (show[col] * 100).round(1)
+    show["hist_hit"] = (show.hist_hit * 100).round(0)
+    show[["flow", "beta", "corr_ai"]] = show[["flow", "beta", "corr_ai"]].round(2)
+    print(show.rename(columns={"ret": "ret%", "resid": "resid%", "hist_edge": "hist_edge%", "hist_hit": "hist_hit%"}).to_string(index=False))
+    print("\n== BY ASSET GROUP ==")
+    g = out["groups"].copy()
+    g[["mean_resid", "mean_ret"]] = (g[["mean_resid", "mean_ret"]] * 100).round(1)
+    g["pct_positive_resid"] = (g.pct_positive_resid * 100).round(0)
+    print(g.to_string())
+    print("\n== CROSS-ASSET CHECK (where 'safe' money would go) ==")
+    ca = c[c.index.isin(ro.CROSS_ASSET)][["theme", "ret", "resid", "flow"]].copy()
+    ca[["ret", "resid"]] = (ca[["ret", "resid"]] * 100).round(1)
+    ca["flow"] = ca.flow.round(2)
+    print(ca.sort_values("resid", ascending=False).rename(columns={"ret": "ret%", "resid": "resid%"}).to_string(index=False))
+    v = i["validation"]
+    print(f"\n== CAN THIS PREDICT WHERE MONEY GOES NEXT? (tested on {len(i['episodes'])} past selloffs of this source since 2018) ==")
+    for hz in (20, 60):
+        x = v[hz]
+        print(f"  {hz}d ahead: residual-strength rank-correlation {x['resid_ic']:+.3f} (positive in {x['resid_pos']}/{x['n']} episodes); net-buying {x['flow_ic']:+.3f} ({x['flow_pos']}/{x['n']})")
+    print("  Reading: values near 0 and ~half of episodes positive mean today's rotation winners did NOT reliably keep winning. This shows where money is going now, not that it will continue.")
+    print("  Past selloff dates: " + ", ".join(i["episodes"]))
+
+
 def main(argv=None):
     warnings.filterwarnings("ignore")
     p = argparse.ArgumentParser(prog="themescan")
@@ -247,6 +290,12 @@ def main(argv=None):
     u.add_argument("--port", type=int, default=8765)
     u.add_argument("--no-browser", action="store_true")
     u.set_defaults(fn=cmd_ui)
+    ro_ = sub.add_parser("rotation", help="where is money going when a complex (default: AI) sells off?")
+    ro_.add_argument("--source", nargs="+", help="source theme keys, e.g. g:ai_semis g:memory b:semis (default: the AI complex)")
+    ro_.add_argument("--window", type=int, default=20, help="trading days for the current-rotation lens")
+    ro_.add_argument("--drop", type=float, default=10.0, help="selloff threshold in percent below the 60-day high, for the historical study")
+    ro_.add_argument("--top", type=int, default=20)
+    ro_.set_defaults(fn=cmd_rotation)
     lg = sub.add_parser("log", help="forward test: record today's verdicts to logs/forward_log.csv")
     lg.add_argument("--universes", nargs="+", default=["themes.yaml", "themes_india.yaml"])
     lg.set_defaults(fn=cmd_log)
