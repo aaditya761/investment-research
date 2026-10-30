@@ -63,6 +63,21 @@ failed out of sample on India), then 20% weight goes to the 30-day news-tone ran
 `validated` (backtested, in the score) / `live only` (valuation, estimate revisions, analyst targets, headline tone: cannot be backtested) /
 `tested: no edge` (macro tailwind, analyst upgrades, Wikipedia attention, not-stretched filter: showed no predictive value, shown as context).
 
+## Demand chains, drivers, calendar, weekly report
+
+    python -m themescan chains                        # spender capex -> supplier revenue / gross margin -> price, for chains in chains.yaml (AI build-out included)
+    python -m themescan calendar --days 21            # upcoming earnings for theme stocks; spenders and suppliers of tracked chains flagged
+    python -m themescan weekly [--ntfy TOPIC]         # logs picks, shows what changed since last week, rotation, news flags, chains, next-7-day earnings -> reports/weekly_DATE.md
+    (UI: Data & jobs cards 9-10; the evidence checklist gained a theme-specific macro-driver line)
+
+- **Chains** (live Yahoo statements, ~5 quarters, so not backtestable): for the AI chain the tracker shows hyperscaler capex +101% YoY / +12% QoQ, suppliers' revenue (semis +68%, memory +61%, cyber +26%, power +22% YoY) and margins, and flags
+  disagreements with price (e.g. power: deliveries growing but price score 35). A capex *cut* by the spenders would be the real warning. Edit `chains.yaml` to track other chains.
+- **Theme-specific macro drivers** (FRED, free, long history; fixed economic signs such as gold <- real yield and dollar, homebuilders <- mortgage rates, energy <- oil, small caps <- credit spreads): tested 2019-2026 on the global and broad
+  universes, **no predictive value** (rank-correlation negative in 2021-23 and 2024+; positive only in the 2019-20 COVID period). Shown in the checklist as context, tagged "tested: no edge".
+- **Cluster-capped selection** (at most 1-2 picks per correlated cluster): tested; it trims drawdowns somewhat on the broad ETF set (top-5 -55% -> -45%) but out of sample (2023+) the information ratio stays about zero, and
+  it gives nothing on the global themes. **Not adopted.**
+- **Weekly report**: fail-soft sections; the ntfy push is opt-in (anyone who knows your topic name can read it, so use a long random one). Run weekly and commit `logs/forward_log.csv`.
+
 ## News layer
 
     python -m themescan news                         # live: tone, tone change, catalysts, bursting phrases per theme; flags where price and news disagree (--detail THEME for headlines)

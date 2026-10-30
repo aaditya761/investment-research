@@ -242,3 +242,35 @@ def snapshot(tickers: list[str], cache_hours=20) -> pd.DataFrame:
     ALT.mkdir(parents=True, exist_ok=True)
     df.to_csv(f)
     return df
+
+
+def fetch_calendar(tickers: list[str], cache_hours=20, days_ahead=60) -> pd.DataFrame:
+    """Upcoming earnings dates (with EPS estimates) per stock. Cached for the day."""
+    import time as _t
+
+    import yfinance as yf
+
+    f = ALT / "calendar.csv"
+    if f.exists() and (_t.time() - f.stat().st_mtime) / 3600 < cache_hours:
+        c = pd.read_csv(f, parse_dates=["date"])
+        if set(tickers) <= set(c.ticker.unique()) | set(c.attrs.get("none", [])):
+            return c[c.ticker.isin(tickers)]
+    rows = []
+    today = pd.Timestamp.today().normalize()
+    for t in tickers:
+        try:
+            e = yf.Ticker(t).get_earnings_dates(limit=8)
+            if e is not None and len(e):
+                e = e.reset_index()
+                e.columns = ["date", "estimate", "reported", "surprise"]
+                e["date"] = pd.to_datetime(e["date"], utc=True).dt.tz_localize(None).dt.normalize()
+                fut = e[(e.date >= today) & (e.date <= today + pd.Timedelta(days=days_ahead))]
+                for _, r in fut.iterrows():
+                    rows.append(dict(ticker=t, date=r.date, estimate=r.estimate))
+        except Exception:
+            pass
+        _t.sleep(0.3)
+    out = pd.DataFrame(rows, columns=["ticker", "date", "estimate"])
+    ALT.mkdir(parents=True, exist_ok=True)
+    out.to_csv(f, index=False)
+    return out

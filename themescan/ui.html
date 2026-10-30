@@ -145,7 +145,12 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
         <button class="primary" data-job="clusters">Find mega-themes</button></div>
       <div class="card"><h3>8 · News archive &amp; narratives</h3><p>Download 5 years of monthly headlines per theme (about 45 minutes, resumable; run once), then see which phrases are bursting across themes and how the AI narrative spread.</p>
         <div class="row"><button class="primary" data-job="newsarchive">Download headline archive</button><button data-job="narratives">Show narratives</button></div></div>
-      <div class="card"><h3>9 · Forward test</h3><p>Record today's Strong / Positive / Avoid picks to <code>logs/forward_log.csv</code>, then score them once 21 and 63 trading days have passed. This is the hindsight-free check. Log weekly.</p>
+      <div class="card"><h3>9 · Demand chains &amp; calendar</h3><p>Follow spender capex to supplier revenue and margins (AI build-out) and compare with price; list upcoming earnings for theme stocks. Edit <code>chains.yaml</code> to add chains.</p>
+        <div class="row"><label>Days ahead <input type="number" id="j-days" value="21" min="1" max="90" style="width:64px"></label></div>
+        <div class="row"><button class="primary" data-job="chains">Run chains</button><button data-job="calendar">Earnings calendar</button></div></div>
+      <div class="card"><h3>10 · Weekly report</h3><p>One run that logs this week's picks, shows what changed since last week, rotation, news flags, chains, next week's earnings, and saves <code>reports/weekly_DATE.md</code>. Run it weekly (add <code>--ntfy TOPIC</code> on the command line for a phone push).</p>
+        <button class="primary" data-job="weekly">Run weekly report</button></div>
+      <div class="card"><h3>11 · Forward test</h3><p>Record today's Strong / Positive / Avoid picks to <code>logs/forward_log.csv</code>, then score them once 21 and 63 trading days have passed. This is the hindsight-free check. Log weekly.</p>
         <div class="row"><button class="primary" data-job="log">Log today's picks</button><button data-job="scorelog">Score past picks</button></div></div>
     </div>
     <p class="cmd" id="jobCmd">&nbsp;</p>
@@ -159,7 +164,7 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
       <p><b>Conviction (0–100)</b> = <b>40% price</b> (rising 200-day trend, relative strength, distance above the 200-day average) + <b>40% earnings</b> (EPS surprise, beat rate, surprise trend) + <b>20% news</b> (mean headline tone over the last 30 days, ranked across themes). Price and earnings were blended 50/50 first because earnings was the strongest signal; news was added at 20% because it improved results in 2024 onward and was neutral before, so it is the weakest-evidence component.</p>
       <p><span class="badge b-Strong">Strong</span> ≥ 80 · <span class="badge b-Positive">Positive</span> 65–80 · <span class="badge b-Neutral">Neutral</span> 35–65 · <span class="badge b-Avoid">Avoid</span> &lt; 35. In tests the average quarterly return vs other themes rose with each tier on both the global and India universes. Themes without usable earnings (e.g. crypto) are <i>price-only</i> (price and news only) and can't be Strong. The News tab shows tone, catalysts, bursting phrases and the AI-narrative spread; news confirmed the AI trade in tests but did not lead it.</p>
       <p><b>Evidence checklist</b> (click a theme): every other source is checked but <u>not scored</u>. Tags show how much to trust each: <span class="tag v">validated</span> backtested and used in the score; <span class="tag">live only</span> valuation, estimate revisions, analyst targets and headlines can't be backtested; <span class="tag">tested: no edge</span> macro, analyst upgrades, attention and "not stretched" showed no predictive value, so they are context only.</p>
-      <p><b>How to use it:</b> as a tilt. Avoid the Avoid themes and favour Strong / Positive ones across a diversified set. On a broad rule-based universe a concentrated top-5 rotation did <u>not</u> beat random picks; dropping the weakest themes did help (about +1 to +3% a year). Log picks weekly (Data &amp; jobs, card 9) for a hindsight-free check. It describes what is already working; it does not predict the next bull run. This is a research screen, not investment advice.</p>
+      <p><b>How to use it:</b> as a tilt. Avoid the Avoid themes and favour Strong / Positive ones across a diversified set. On a broad rule-based universe a concentrated top-5 rotation did <u>not</u> beat random picks; dropping the weakest themes did help (about +1 to +3% a year). Log picks weekly (Data &amp; jobs, card 11) for a hindsight-free check. It describes what is already working; it does not predict the next bull run. This is a research screen, not investment advice.</p>
       <p>Click a theme row to see its tickers, live headlines and a valuation snapshot. Everything here runs on your machine: the page talks only to <code>127.0.0.1</code>.</p>
     </div>
   </section>
@@ -325,6 +330,7 @@ function jobBody(cmd){
   if(cmd==='headlines'){ b.n=+$('#j-n').value; }
   if(cmd==='backtest'){ b.start=$('#j-start').value; b.step=+$('#j-step').value; }
   if(cmd==='research'){ b.hist=$('#j-hist').value; b.validate=$('#j-val').value; }
+  if(cmd==='calendar'){ b.days=+$('#j-days').value; }
   if(cmd==='clusters'){ b.seed=$('#j-seed').value.trim(); }
   if(cmd==='portfolio'){ b.hist=$('#j-hist2').value; b.n=+$('#j-n2').value; b.every=+$('#j-every').value; b.cost=+$('#j-cost').value; }
   return b;

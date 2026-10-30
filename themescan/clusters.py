@@ -126,16 +126,18 @@ def first_alert(X, scores, seed, min_size=4, top_frac=0.6, avg=70):
 
 
 def fuel_from_frame(c: pd.DataFrame) -> dict:
-    """c: index = quarter-end, columns = companies, values = capex in $B (NaN when not reported). Like-for-like totals."""
+    """c: index = quarter-end, columns = companies, values = capex in $B (NaN when not reported). Like-for-like totals over the
+    companies that reported the latest quarter; prior / year-ago periods are the nearest earlier rows where all of them reported."""
     c = c.sort_index()
     last = c.index[-1]
     cols = [t for t in c.columns if pd.notna(c.at[last, t])]
     out = dict(quarter=str(last.date()), companies=cols, latest=float(c.loc[last, cols].sum()))
-    prev = c.index[-2] if len(c) > 1 else None
-    yoy = c.index[c.index <= last - pd.Timedelta(days=350)]
-    if prev is not None and c.loc[prev, cols].notna().all():
-        out["qoq"] = float(c.loc[last, cols].sum() / c.loc[prev, cols].sum() - 1)
-    if len(yoy) and c.loc[yoy[-1], cols].notna().all():
+    full = c[cols].dropna().index
+    prev = [d for d in full if (last - d).days >= 60]
+    if prev and (last - prev[-1]).days <= 120:
+        out["qoq"] = float(c.loc[last, cols].sum() / c.loc[prev[-1], cols].sum() - 1)
+    yoy = [d for d in full if 330 <= (last - d).days <= 400]
+    if yoy:
         out["yoy"] = float(c.loc[last, cols].sum() / c.loc[yoy[-1], cols].sum() - 1)
     return out
 

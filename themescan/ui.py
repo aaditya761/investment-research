@@ -242,6 +242,15 @@ def build_argv(cmd: str, p: dict) -> list[str]:
         if h not in hist_files() or (v and v not in hist_files()):
             raise ValueError("pick a backtest result from the list (run a backtest first)")
         return ["research", f"data/{h}"] + (["--validate", f"data/{v}"] if v else [])
+    if cmd == "chains":
+        return glob + (["--offline"] if p.get("offline") else []) + ["chains"]
+    if cmd == "calendar":
+        d = int(p.get("days", 21))
+        if not 1 <= d <= 90:
+            raise ValueError("days must be 1-90")
+        return glob + ["calendar", "--days", str(d)]
+    if cmd == "weekly":
+        return (["--offline"] if p.get("offline") else []) + ["weekly"]
     if cmd == "newsarchive":
         return ["newsarchive"]
     if cmd == "narratives":

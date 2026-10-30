@@ -69,7 +69,7 @@ def full_scan(cfg, close, vol, end=None, fundamentals=True, news="off", queries=
                 df = altdata.add_earnings_columns(df, earn, cfg.themes, close.index[end - 1])
         else:
             note = "Earnings data not downloaded yet, so conviction is price-only. Run 'Download data' (or `altfetch --skip-news`)."
-    tone = None
+    tone, keys = None, []
     live = end == len(close) and news != "off"
     if live:
         import yaml
@@ -84,7 +84,7 @@ def full_scan(cfg, close, vol, end=None, fundamentals=True, news="off", queries=
             if tone.notna().sum() < 5:
                 tone = None
     df = add_conviction(mask_noisy_earnings(df, cfg.themes), tone)
-    if live and tone is None:
+    if live and tone is None and keys:
         note = (note + " " if note else "") + "News tone not loaded (run `python -m themescan news` or the News tab once), so conviction excludes news."
     if note is None and not df.earn_covered.all():
         note = f"No earnings coverage for: {', '.join(df.index[~df.earn_covered])} (conviction = price score for these)."
@@ -97,9 +97,10 @@ def _chk(name, status, detail, tier):
 
 V, U, N = "validated", "live only, not backtestable", "tested: no edge"
 W = "weak evidence (mostly 2024+)"
+SERIES_LABEL = {"real_yield": "real yield", "dollar": "dollar", "hy_spread": "credit spread", "wti": "oil", "gas": "gas", "mortgage": "mortgage rate", "nfci": "fin. conditions", "fed_bs": "Fed balance sheet", "copper": "copper", "curve": "yield curve"}
 
 
-def build_checks(row: pd.Series, snap: dict | None, tone: tuple | None, macro_rank, upgr, wiki_z) -> list[dict]:
+def build_checks(row: pd.Series, snap: dict | None, tone: tuple | None, macro_rank, upgr, wiki_z, driver: tuple | None = None) -> list[dict]:
     """Checklist for one theme. `row` is a full_scan row; the rest are optional live / context inputs."""
     c = []
     c.append(_chk("Trend & relative strength", "pass" if row.score >= scoring.LEAD else "fail",
@@ -128,6 +129,8 @@ def build_checks(row: pd.Series, snap: dict | None, tone: tuple | None, macro_ra
         c.append(_chk("Upside to analyst targets", "na" if up != up else ("pass" if up > 0 else "fail"), "n/a" if up != up else f"median {up:+.0f}%", U))
     if tone:
         c.append(_chk("Recent headline tone not negative", "pass" if tone[0] >= 0 else "fail", f"{tone[1]} stories in 14d, crude tone {tone[0]:+d}", U))
+    if driver is not None and driver[0] == driver[0]:
+        c.append(_chk("Theme-specific macro drivers favourable", "pass" if driver[0] > 0 else "fail", driver[1] + " (fixed economic signs; backtests showed no predictive value)", N))
     if macro_rank is not None:
         c.append(_chk("Macro tailwind in top half", "pass" if macro_rank > 0.5 else "fail", f"rank {macro_rank * 100:.0f}th percentile of themes", N))
     if upgr is not None and upgr == upgr:
@@ -187,10 +190,23 @@ def gather_live(cfg, close, theme: str, end: int, row: pd.Series, live=True, uni
             upgr = f.net_upgr.iloc[0]
     except Exception:
         pass
+    driver = None
+    try:
+        from . import drivers as dr
+
+        fred = dr.fetch()
+        z = dr.driver_z(fred)
+        m = dr.MAP.get(theme.split(":")[-1])
+        if m:
+            row_z = z.iloc[-1]
+            parts = [f"{SERIES_LABEL[d]} {row_z[d]:+.1f}z ({'tailwind' if sg * row_z[d] > 0 else 'headwind'})" for d, sg in m.items() if d in row_z and pd.notna(row_z[d])]
+            driver = (dr.tailwind(z, theme), "; ".join(parts))
+    except Exception:
+        pass
     wf = Path("data/alt/wiki") / f"{theme}.csv"
     if wf.exists():
         try:
             wiki_z = altdata.news_features(pd.read_csv(wf, index_col=0, parse_dates=True).iloc[:, 0], pd.DatetimeIndex([asof])).news_z.iloc[0]
         except Exception:
             pass
-    return build_checks(row, snap, tone, macro_rank, upgr, wiki_z)
+    return build_checks(row, snap, tone, macro_rank, upgr, wiki_z, driver)

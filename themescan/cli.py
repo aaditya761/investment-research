@@ -75,7 +75,7 @@ def cmd_verify(args):
 
     cfg = load_config(args.themes)
     close, vol = _load(args, cfg)
-    df, note = verify.full_scan(cfg, close, vol)
+    df, note = verify.full_scan(cfg, close, vol, news="cache" if args.offline else "fetch")
     if note:
         print(f"note: {note}\n")
     sym = {"pass": "PASS", "fail": "FAIL", "na": " -- "}
@@ -368,6 +368,142 @@ def cmd_newsarchive(args):
     print("DONE")
 
 
+def cmd_chains(args):
+    from . import chains as ch
+    from . import verify
+
+    cfg = load_config(args.themes)
+    close, vol = _load(args, cfg)
+    df, _ = verify.full_scan(cfg, close, vol, news="cache")
+    allc = ch.load_chains(args.chains)
+    for name in (args.chain or list(allc)):
+        c = allc[name]
+        print(f"\n== {c['label']} ==")
+        res = ch.analyze(c, df.verdict, df.score)
+        for line in ch.reading(res):
+            print("  " + line)
+        print("  Supplier detail (latest quarter vs year ago):")
+        for k, s in res["suppliers"].items():
+            d = s["stocks"].assign(rev_yoy=lambda x: (x.rev_yoy * 100).round(0), rev_qoq=lambda x: (x.rev_qoq * 100).round(0), gm=lambda x: (x.gm * 100).round(0), gm_chg=lambda x: (x.gm_chg * 100).round(1))
+            print("   " + k + ": " + "; ".join(f"{r.ticker} rev {r.rev_yoy:+.0f}% yoy, margin {r.gm:.0f}% ({r.gm_chg:+.1f}pp)" for r in d.itertuples()))
+        if res["intensity"]:
+            print("  Capex as % of revenue (latest quarter): " + ", ".join(f"{t} {v * 100:.0f}%" for t, v in res["intensity"].items()))
+    print("\nLive fundamentals only (Yahoo keeps ~5 quarters), so this cannot be backtested: it is evidence to read next to the score, not part of it.")
+
+
+def cmd_calendar(args):
+    from . import altdata
+    from . import chains as ch
+
+    cfg = load_config(args.themes)
+    stocks = sorted({t for th in cfg.themes.values() for t in th.stocks if not t.startswith("^") and "-USD" not in t and "." not in t})
+    cal = altdata.fetch_calendar(stocks, days_ahead=args.days)
+    cal = cal[cal.date <= pd.Timestamp.today().normalize() + pd.Timedelta(days=args.days)]
+    key = {t: "spender" for c in ch.load_chains(args.chains).values() for t in c["spenders"]}
+    for c in ch.load_chains(args.chains).values():
+        for th, ts in c["suppliers"].items():
+            key.update({t: f"supplier ({th})" for t in ts})
+    rows = []
+    for k, th in cfg.themes.items():
+        sub = cal[cal.ticker.isin(th.stocks)]
+        for r in sub.itertuples():
+            rows.append(dict(date=r.date.date(), theme=k, ticker=r.ticker, eps_est=r.estimate, note=key.get(r.ticker, "")))
+    t = pd.DataFrame(rows).sort_values(["date", "theme"]) if rows else pd.DataFrame()
+    print(f"Earnings in the next {args.days} days for theme stocks (spenders and suppliers of tracked chains flagged):\n")
+    print(t.to_string(index=False) if len(t) else "none found")
+
+
+def cmd_weekly(args):
+    import datetime as dt
+
+    import yaml
+
+    from . import altdata, forward, verify, weekly
+    from . import chains as ch
+    from . import news as nw
+    from . import rotation as ro
+
+    secs: dict[str, list[str]] = {}
+    qf = Path(args.queries)
+    q = yaml.safe_load(qf.read_text()) if qf.exists() else {}
+    today = None
+    dfs = {}
+    for u in args.universes:
+        try:
+            cfg = load_config(u)
+            close, vol = _load(args, cfg)
+            df, note = verify.full_scan(cfg, close, vol, news="cache" if args.offline else "fetch", queries=q)
+            asof = close.index[-1]
+            today = today or asof
+            prev = weekly.previous_snapshot(Path(u).name, asof)
+            secs[f"Picks: {Path(u).stem}"] = weekly.changes_section(Path(u).name, df, prev) + ([f"_{note}_"] if note else [])
+            forward.write_log(Path(u).name, df, asof)
+            dfs[u] = (cfg, close, vol, df)
+        except Exception as e:
+            secs[f"Picks: {u}"] = [f"_failed: {type(e).__name__}: {e}_"]
+    if "themes.yaml" in dfs:
+        cfg, close, vol, df = dfs["themes.yaml"]
+        try:
+            cfgs = {"g": cfg, "b": load_config("themes_broad.yaml")}
+            tick = sorted(set(cfgs["g"].all_tickers) | set(cfgs["b"].all_tickers))
+            c2, v2, _ = load_prices(tick, start="2018-01-01", cache_dir=args.cache, offline=args.offline)
+            c2, v2 = ro.weekdays(c2, v2)
+            now, info = ro.current_state(c2, v2, ro.merge_universes(cfgs), "ACWI")
+            themes = ro.merge_universes(cfgs)
+            top = now.head(5)
+            secs["Rotation"] = [f"AI source: {info['source_return'] * 100:+.1f}% over 20 trading days ({info['source_excess'] * 100:+.1f}% vs world), {info['drawdown'] * 100:.1f}% below its 60-day high.",
+                                "Where it is going (residual strength + net buying): " + ", ".join(f"{ro.label(k, themes).split('] ')[1]} ({r.resid * 100:+.0f}%)" for k, r in top.iterrows()),
+                                "_Past selloffs: this did not reliably predict persistence._"]
+        except Exception as e:
+            secs["Rotation"] = [f"_failed: {type(e).__name__}: {e}_"]
+        try:
+            keys = [k for k in cfg.themes if k in q]
+            rows = nw.dashboard(q, keys, None, 14)
+            flags = [f"{cfg.themes[k].label}: {nw.divergence(float(df.score.get(k, np.nan)), f['tone_chg'], f['tone'])} (tone {f['tone']:+.2f})" for k, f in rows.items() if nw.divergence(float(df.score.get(k, np.nan)), f["tone_chg"], f["tone"])]
+            secs["News"] = ["Price and news disagree: " + ("; ".join(flags) if flags else "none this week")]
+        except Exception as e:
+            secs["News"] = [f"_failed: {type(e).__name__}: {e}_"]
+        try:
+            allc = ch.load_chains(args.chains)
+            lines = []
+            for name, c in allc.items():
+                res = ch.analyze(c, df.verdict, df.score)
+                lines += [f"{c['label']}:"] + ["- " + l for l in ch.reading(res)]
+            secs["Demand chains"] = lines
+        except Exception as e:
+            secs["Demand chains"] = [f"_failed: {type(e).__name__}: {e}_"]
+        try:
+            stocks = sorted({t for th in cfg.themes.values() for t in th.stocks if not t.startswith("^") and "-USD" not in t and "." not in t})
+            cal = altdata.fetch_calendar(stocks, days_ahead=7)
+            cal = cal[cal.date <= pd.Timestamp.today().normalize() + pd.Timedelta(days=7)].sort_values("date")
+            watch = set(df[df.verdict.isin(["Strong", "Positive"])].index)
+            rows = [f"{r.date.date()} {r.ticker}" + (" *" if any(r.ticker in cfg.themes[k].stocks for k in watch) else "") for r in cal.itertuples()]
+            secs["Earnings in the next 7 days"] = ["(* = a Strong/Positive theme) " + (", ".join(rows) if rows else "none")]
+        except Exception as e:
+            secs["Earnings in the next 7 days"] = [f"_failed: {type(e).__name__}: {e}_"]
+    try:
+        panels = {}
+        for u in args.universes:
+            if u in dfs:
+                panels[Path(u).name] = (dfs[u][0], dfs[u][1])
+        secs["Forward test"] = ["```", forward.score_log(panels), "```"]
+    except Exception as e:
+        secs["Forward test"] = [f"_failed: {e}_"]
+    day = (today or pd.Timestamp.today()).date()
+    md = [f"# Themescan weekly report: {day}", "", "_Research screen, not investment advice. Backtests show a modest, regime-dependent edge; the forward test below is the honest scoreboard._", ""]
+    for name, lines in secs.items():
+        md += [f"## {name}", ""] + lines + [""]
+    weekly.OUT.mkdir(exist_ok=True)
+    path = weekly.OUT / f"weekly_{day}.md"
+    path.write_text("\n".join(md))
+    print("\n".join(md))
+    print(f"\nsaved: {path}")
+    topic = args.ntfy or __import__("os").environ.get("NTFY_TOPIC")
+    if topic:
+        ok = weekly.push_ntfy(topic, f"Themescan {day}", weekly.compact(secs))
+        print(f"push to ntfy topic '{topic}': {'sent' if ok else 'failed'}")
+
+
 def main(argv=None):
     warnings.filterwarnings("ignore")
     p = argparse.ArgumentParser(prog="themescan")
@@ -421,6 +557,20 @@ def main(argv=None):
     ar.add_argument("--start", default="2021-01-01")
     ar.add_argument("--queries", default="news_queries.yaml")
     ar.set_defaults(fn=cmd_newsarchive)
+    chn = sub.add_parser("chains", help="demand-chain tracker: spender capex -> supplier revenue/margins -> price")
+    chn.add_argument("--chain", nargs="*")
+    chn.add_argument("--chains", default="chains.yaml")
+    chn.set_defaults(fn=cmd_chains)
+    cal = sub.add_parser("calendar", help="upcoming earnings for theme stocks (catalyst calendar)")
+    cal.add_argument("--days", type=int, default=21)
+    cal.add_argument("--chains", default="chains.yaml")
+    cal.set_defaults(fn=cmd_calendar)
+    wk = sub.add_parser("weekly", help="weekly report: logs picks, shows what changed, writes reports/weekly_DATE.md (optional ntfy push)")
+    wk.add_argument("--universes", nargs="+", default=["themes.yaml", "themes_india.yaml"])
+    wk.add_argument("--queries", default="news_queries.yaml")
+    wk.add_argument("--chains", default="chains.yaml")
+    wk.add_argument("--ntfy", help="ntfy.sh topic to push a short summary to (or set NTFY_TOPIC). Anyone who knows the topic can read it: pick a long random name.")
+    wk.set_defaults(fn=cmd_weekly)
     cx = sub.add_parser("clusters", help="mega-theme detector: groups of correlated, strong themes + lifecycle + AI fuel gauge")
     cx.add_argument("--seed", default="g:ai_semis", help="theme whose cluster lifecycle to show")
     cx.add_argument("--weeks", type=int, default=260, help="weeks of history to score (cached)")

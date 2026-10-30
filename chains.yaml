@@ -1,0 +1,11 @@
+# Demand chains: who spends (customers), and who gets paid (supplier themes + representative stocks).
+# The tracker reads spender capex growth and supplier revenue / margin trends, then compares both with what each supplier theme's price is doing.
+# Add chains freely. Tickers are Yahoo symbols; supplier keys are theme keys in themes.yaml.
+ai_buildout:
+  label: AI data-center build-out
+  spenders: [MSFT, GOOGL, META, AMZN, ORCL]
+  suppliers:
+    ai_semis: [NVDA, AVGO, AMD, TSM]
+    memory: [MU, WDC, STX]
+    power_ai: [VST, CEG, GEV, ETN]
+    cybersecurity: [CRWD, PANW, ZS]
