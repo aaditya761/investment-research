@@ -14,8 +14,7 @@ def test_cluster_groups_correlated_themes_together():
 
 
 def test_hot_requires_size_strength_and_breadth():
-    sc = pd.Series({f"t{i}": 50.0 for i in range(20)})
-    sc[["a", "b", "c"]] = [95, 90, 85]
+    sc = pd.Series({**{f"t{i}": 50.0 for i in range(20)}, "a": 95.0, "b": 90.0, "c": 85.0})
     assert cl.is_hot(["a", "b", "c"], sc)["hot"]
     assert not cl.is_hot(["a", "b"], sc)["hot"]  # too small
     assert not cl.is_hot(["t0", "t1", "t2"], sc)["hot"]  # not strong
