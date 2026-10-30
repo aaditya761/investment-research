@@ -2,6 +2,7 @@ import argparse
 from pathlib import Path
 import warnings
 
+import numpy as np
 import pandas as pd
 
 from . import backtest as bt
@@ -31,6 +32,7 @@ def _fmt(df):
     t["rel_str%"] = (df.rs * 100).round(1)
     t["3m%"] = (df.r3m * 100).round(0)
     t[">200d"] = (df.breadth200 * 100).round(0)
+    t["news"] = df.news.round(2)
     t["surp%"] = df.surp.round(1)
     t["beat%"] = (df.beat * 100).round(0)
     t["leaders"] = df.leaders
@@ -43,10 +45,11 @@ def cmd_scan(args):
     cfg = load_config(args.themes)
     close, vol = _load(args, cfg)
     end = len(close) if not args.asof else close.index.searchsorted(pd.Timestamp(args.asof), side="right")
-    df, note = verify.full_scan(cfg, close, vol, end, fundamentals=not args.no_fundamentals and not args.demo)
+    df, note = verify.full_scan(cfg, close, vol, end, fundamentals=not args.no_fundamentals and not args.demo,
+                                news="off" if (args.asof or args.demo or args.no_news) else ("cache" if args.offline else "fetch"))
     _, tm = scoring.score_asof(close, vol, close[cfg.benchmark], cfg.themes, end)
     print(f"As of {close.index[end - 1].date()} | benchmark {cfg.benchmark} | {len(df)} themes")
-    print("conviction = 50% price (200d trend slope, relative strength, distance above 200d) + 50% earnings (EPS surprise, beat rate, surprise trend)")
+    print("conviction = price (trend slope, relative strength, distance above 200d) and earnings (EPS surprise, beat rate, surprise trend) blended 50/50, then 20% weight on 30-day news tone (net: 40% price / 40% earnings / 20% news)")
     print("Strong >= 80 | Positive 65-80 | Neutral 35-65 | Avoid < 35.  Tiers were monotonic in walk-forward tests on global and India themes.")
     if note:
         print(f"note: {note}")
@@ -198,7 +201,7 @@ def cmd_log(args):
     for u in args.universes:
         cfg = load_config(u)
         close, vol = _load(args, cfg)
-        df, _ = verify.full_scan(cfg, close, vol)
+        df, _ = verify.full_scan(cfg, close, vol, news="cache" if args.offline else "fetch")
         n = forward.write_log(Path(u).name, df, close.index[-1])
         print(f"{u}: {'logged ' + str(n) + ' themes' if n else 'already logged'} for {close.index[-1].date()}  "
               f"(Strong {int((df.verdict == 'Strong').sum())}, Positive {int((df.verdict == 'Positive').sum())}, Avoid {int((df.verdict == 'Avoid').sum())})")
@@ -302,6 +305,69 @@ def cmd_clusters(args):
     print("a 'laggard catch-up' signal did NOT hold out of sample, so this does not reliably name the next leg.")
 
 
+def cmd_news(args):
+    import yaml
+
+    from . import news as nw
+    from . import verify
+
+    cfg = load_config(args.themes)
+    q = yaml.safe_load(open(args.queries))
+    keys = args.theme or [k for k in cfg.themes if k in q]
+    close, vol = _load(args, cfg)
+    df, _ = verify.full_scan(cfg, close, vol)
+    nw.refresh_tone30(q, [k for k in cfg.themes if k in q], fetch=True)
+    arch = nw.load_history()
+    print(f"Live news, last {args.days} days vs the {args.days} days before (headline tone from a finance word list; Google News feed). Tone is -1..+1.\n")
+    rows = nw.dashboard(q, keys, arch if len(arch) else None, args.days)
+    out = []
+    for k, f in rows.items():
+        sc = df.score.get(k, np.nan) if hasattr(df, "score") else np.nan
+        out.append(dict(theme=k, verdict=df.verdict.get(k, ""), price=round(sc), tone=round(f["tone"], 2), tone_chg=round(f["tone_chg"], 2), pos_pct=round(100 * f["pos"]), neg_pct=round(100 * f["neg"]),
+                        catalysts=", ".join(f["catalysts"]), bursts=", ".join(f.get("bursts", [])), flag=nw.divergence(sc, f["tone_chg"], f["tone"])))
+    t = pd.DataFrame(out).set_index("theme").sort_values("tone", ascending=False)
+    pd.set_option("display.max_colwidth", 60)
+    print(t.to_string())
+    flagged = t[t.flag != ""]
+    if len(flagged):
+        print("\n== Price and news disagree (look closer; not a validated predictor) ==")
+        print(flagged[["verdict", "price", "tone", "tone_chg", "flag", "catalysts"]].to_string())
+    for k in (args.detail or []):
+        print(f"\n## {k} headlines")
+        for h in rows[k]["headlines"]:
+            print(f"  {h['date']}  {h['tone']:+.2f}  {', '.join(h['catalysts'])[:34]:34s}  {h['title'][:100]}")
+
+
+def cmd_narratives(args):
+    from . import news as nw
+
+    h = nw.load_history()
+    if h.empty:
+        print("No archive yet: run `python -m themescan newsarchive` first (about 45 min, resumable).")
+        return
+    months = sorted(h.month.unique())
+    month = args.month or months[-1]
+    print(f"Archive: {len(h)} headlines, {h.theme.nunique()} themes, {months[0]} -> {months[-1]}\n")
+    print(f"== Terms bursting in {month} across themes (rate vs prior 6 months; seen in >= 3 different themes) ==")
+    b = nw.term_bursts(h, month)
+    print(b.round(1).to_string(index=False) if len(b) else "not enough history")
+    print("\n== Narrative spread: share of headlines matching, and number of themes where it exceeds 15% ==")
+    for name, pat in [("AI", r"\b(ai|a\.i\.|artificial intelligence|generative|chatgpt|openai|llm|data cent(er|re)s?|hbm|gpu)\b")] + [(a.split("=")[0], a.split("=", 1)[1]) for a in (args.pattern or [])]:
+        sp = nw.narrative_spread(h, pat)
+        print(f"\n[{name}]")
+        print(sp.iloc[::args.every].assign(share_all=lambda d: (d.share_all * 100).round(1)).to_string())
+
+
+def cmd_newsarchive(args):
+    import yaml
+
+    from . import news as nw
+
+    q = yaml.safe_load(open(args.queries))
+    nw.fetch_history({k: v for k, v in q.items() if not args.theme or k in args.theme}, start=args.start, log=lambda m: print(m, flush=True))
+    print("DONE")
+
+
 def main(argv=None):
     warnings.filterwarnings("ignore")
     p = argparse.ArgumentParser(prog="themescan")
@@ -317,6 +383,7 @@ def main(argv=None):
     s.add_argument("--asof")
     s.add_argument("--detail", help="theme key to show ticker-level detail")
     s.add_argument("--no-fundamentals", action="store_true", help="skip earnings-surprise columns")
+    s.add_argument("--no-news", action="store_true", help="leave news tone out of conviction")
     s.set_defaults(fn=cmd_scan)
     b = sub.add_parser("backtest", help="walk-forward test + lead time on known runs")
     b.add_argument("--bt-start", default="2020-01-01")
@@ -338,6 +405,22 @@ def main(argv=None):
     ro_.add_argument("--drop", type=float, default=10.0, help="selloff threshold in percent below the 60-day high, for the historical study")
     ro_.add_argument("--top", type=int, default=20)
     ro_.set_defaults(fn=cmd_rotation)
+    nw_ = sub.add_parser("news", help="live news dashboard: tone, tone change, catalysts, bursting terms per theme")
+    nw_.add_argument("--theme", nargs="*")
+    nw_.add_argument("--detail", nargs="*", help="theme keys whose headlines to print")
+    nw_.add_argument("--days", type=int, default=14)
+    nw_.add_argument("--queries", default="news_queries.yaml")
+    nw_.set_defaults(fn=cmd_news)
+    na = sub.add_parser("narratives", help="emerging terms across themes and the spread of a narrative (e.g. AI) over time")
+    na.add_argument("--month", help="YYYY-MM (default: latest in archive)")
+    na.add_argument("--pattern", nargs="*", help='extra narratives as NAME=REGEX')
+    na.add_argument("--every", type=int, default=3, help="print every Nth month")
+    na.set_defaults(fn=cmd_narratives)
+    ar = sub.add_parser("newsarchive", help="download monthly headline history per theme (resumable, ~45 min for all)")
+    ar.add_argument("--theme", nargs="*")
+    ar.add_argument("--start", default="2021-01-01")
+    ar.add_argument("--queries", default="news_queries.yaml")
+    ar.set_defaults(fn=cmd_newsarchive)
     cx = sub.add_parser("clusters", help="mega-theme detector: groups of correlated, strong themes + lifecycle + AI fuel gauge")
     cx.add_argument("--seed", default="g:ai_semis", help="theme whose cluster lifecycle to show")
     cx.add_argument("--weeks", type=int, default=260, help="weeks of history to score (cached)")

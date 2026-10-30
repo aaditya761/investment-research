@@ -49,8 +49,8 @@ Re-run `backtest` + `research` after changing themes or scoring.
 
 ## How it scores
 
-**Conviction (0-100) = 50% price score + 50% earnings composite.** Earnings is the largest single component because it was the
-strongest signal in the walk-forward tests; earnings alone failed out of sample on India, so it is not 100%.
+**Conviction (0-100) = 40% price + 40% earnings + 20% news.** Price and earnings are blended 50/50 first (earnings was the strongest signal in the walk-forward tests; earnings alone
+failed out of sample on India), then 20% weight goes to the 30-day news-tone rank. News is the weakest-evidence component (see *News layer*).
 
 - *Price score* (percentile-ranked across themes): 50% slope of the 200d MA, 30% relative strength vs benchmark (1/3/6 month), 20% distance above the 200d MA.
 - *Earnings composite* (percentile-ranked): 50% median EPS surprise %, 30% share of beats, 20% change in surprise vs the prior 120 days. Themes whose EPS is
@@ -62,6 +62,25 @@ strongest signal in the walk-forward tests; earnings alone failed out of sample 
 **Evidence checklist** (`verify` command, or click a theme in the UI): every other source is checked but **not scored**, each tagged by how much to trust it:
 `validated` (backtested, in the score) / `live only` (valuation, estimate revisions, analyst targets, headline tone: cannot be backtested) /
 `tested: no edge` (macro tailwind, analyst upgrades, Wikipedia attention, not-stretched filter: showed no predictive value, shown as context).
+
+## News layer
+
+    python -m themescan news                         # live: tone, tone change, catalysts, bursting phrases per theme; flags where price and news disagree (--detail THEME for headlines)
+    python -m themescan newsarchive                  # one-off, ~45 min, resumable: monthly headline history per theme since 2021 (Google News date-bounded queries)
+    python -m themescan narratives                   # phrases bursting across themes this month + how the AI narrative spread over time
+    (UI: News tab; Data & jobs cards 8)
+
+Source is Google News RSS (free). Historical headlines are point-in-time and sampled (about 100 per theme-month; story *counts* are unreliable, so only text is used). Tone is a finance word list
+with negation handling and catalyst tags (earnings, capex/demand, supply/pricing, policy, macro, analyst action, deals, geopolitics). An optional Claude classifier exists (`news.classify_llm`, needs
+`ANTHROPIC_API_KEY`) but is not used by default and was not tested against real API output.
+
+What the tests (31 themes, 2021-2026, monthly, 126-bar forward alpha) showed:
+- Tone is only weakly correlated with price score (0.24), so it is not just a price proxy. Alone: rank-correlation +0.06 (t 2.1) overall, but about 0 in 2021-23 and +0.15 in 2024 onward.
+- Adding it to conviction at 20% left 2021-23 about unchanged (rank-correlation 0.08 -> 0.09) and improved 2024+ (0.08 -> 0.10); higher weights hurt 2021-23. Verdict tiers stayed monotonic and sharpened
+  (Strong +5.4% / +13.9%, Avoid -2.2% / -3.5% for 2021-23 / 2024+). Evidence is real but modest and regime-dependent.
+- **News confirmed the AI trade; it did not lead it.** AI terms rose from about 1.5% of headlines (mid-2022) to 3.3% (Feb 2023) and 5-8% (2024), but within the individual themes they crossed 15% of headlines
+  after price had already moved (cybersecurity Jan 2024, power and Taiwan Apr 2024, uranium Sep 2024).
+- "News improving more than price" (divergence) and tone *change* showed no predictive value; the divergence flag is shown as a prompt to look closer only.
 
 ## Mega-themes: recognising "the AI trade" while it forms
 

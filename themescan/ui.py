@@ -20,6 +20,7 @@ import pandas as pd
 import yaml
 
 from . import altdata, rotation, scoring, synthetic, verify
+from . import news as newsmod
 from .config import load_config
 from .data import load_prices
 
@@ -97,7 +98,7 @@ def _scan(p):
     end = close.index.searchsorted(pd.Timestamp(asof), side="right") if asof else len(close)
     if end < 300:
         raise ValueError("not enough price history before that date")
-    df, note = verify.full_scan(cfg, close, vol, end, fundamentals=bool(p.get("fundamentals", True)) and not p.get("demo"))
+    df, note = verify.full_scan(cfg, close, vol, end, fundamentals=bool(p.get("fundamentals", True)) and not p.get("demo"), news="off" if (p.get("demo") or p.get("asof")) else "cache")
     return cfg, close, end, df, note, missing
 
 
@@ -105,7 +106,7 @@ def api_scan(p):
     cfg, close, end, df, note, missing = _scan(p)
     df["label"] = [cfg.themes[k].label for k in df.index]
     cols = ["label", "n", "conviction", "verdict", "score", "earn", "earn_covered", "accel", "stage", "leading", "rs", "r3m", "d200",
-            "breadth200", "ext", "rsi", "volr", "surp", "beat", "surp_chg", "leaders"]
+            "breadth200", "ext", "rsi", "volr", "surp", "beat", "surp_chg", "news", "news_rank", "leaders"]
     return dict(asof=str(close.index[end - 1].date()), benchmark=cfg.benchmark, missing=missing, note=note, rows=_records(df[cols]))
 
 
@@ -119,6 +120,39 @@ def api_verify(p):
 
 
 _ROT: dict = {}
+_NEWS: dict = {}
+AI_RX = r"\b(ai|a\.i\.|artificial intelligence|generative|chatgpt|openai|llm|data cent(er|re)s?|hbm|gpu)\b"
+
+
+def api_news(p):
+    key = (p.get("universe", "themes.yaml"), bool(p.get("offline")))
+    hit = _NEWS.get(key)
+    if hit and time.time() - hit[0] < 600:
+        return hit[1]
+    cfg, close, vol, _ = panel(dict(p, demo=False))
+    qf = ROOT / "news_queries.yaml"
+    q = yaml.safe_load(qf.read_text()) if qf.exists() else {}
+    arch = newsmod.load_history()
+    keys = [k for k in cfg.themes if k in q]
+    newsmod.refresh_tone30(q, keys, fetch=True)
+    df, _n = verify.full_scan(cfg, close, vol, news="cache")
+    rows = newsmod.dashboard(q, keys, arch if len(arch) else None, 14)
+    out = []
+    for k, f in rows.items():
+        sc = float(df.score.get(k, float("nan")))
+        out.append(dict(index=k, label=cfg.themes[k].label, verdict=df.verdict.get(k, ""), price=_clean(sc), tone=_clean(f["tone"]), tone_chg=_clean(f["tone_chg"]), pos=_clean(f["pos"]), neg=_clean(f["neg"]),
+                        n=f["n"], catalysts=list(f["catalysts"]), bursts=f.get("bursts", []), flag=newsmod.divergence(sc, f["tone_chg"], f["tone"]),
+                        headlines=[{k2: (_clean(v) if not isinstance(v, (list, str)) else v) for k2, v in h.items()} for h in f["headlines"]]))
+    narr = None
+    if len(arch):
+        months = sorted(arch.month.unique())
+        b = newsmod.term_bursts(arch, months[-1])
+        sp = newsmod.narrative_spread(arch, AI_RX)
+        narr = dict(month=months[-1], bursts=_records(b) if len(b) else [], ai_spread=[dict(month=m, share=_clean(r.share_all), themes_over=int(r.themes_over_15pct), themes=int(r.themes)) for m, r in sp.iloc[::3].iterrows()],
+                    archive=dict(headlines=len(arch), themes=int(arch.theme.nunique()), first=months[0], last=months[-1]))
+    res = dict(asof=str(close.index[-1].date()), rows=sorted(out, key=lambda r: -(r["tone"] if r["tone"] is not None else -9)), narratives=narr)
+    _NEWS[key] = (time.time(), res)
+    return res
 
 
 def api_rotation(p):
@@ -208,6 +242,13 @@ def build_argv(cmd: str, p: dict) -> list[str]:
         if h not in hist_files() or (v and v not in hist_files()):
             raise ValueError("pick a backtest result from the list (run a backtest first)")
         return ["research", f"data/{h}"] + (["--validate", f"data/{v}"] if v else [])
+    if cmd == "newsarchive":
+        return ["newsarchive"]
+    if cmd == "narratives":
+        m = p.get("month") or ""
+        if m and not re.match(r"^\d{4}-\d{2}$", m):
+            raise ValueError("bad month")
+        return ["narratives"] + (["--month", m] if m else [])
     if cmd == "clusters":
         seed = p.get("seed", "g:ai_semis")
         if not re.match(r"^[gb]:[a-z_0-9]+$", seed):
@@ -268,7 +309,7 @@ def job_cancel(jid: str) -> dict:
 
 
 # ---------- HTTP ----------
-ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/rotation": api_rotation, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
+ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/news": api_news, "/api/rotation": api_rotation, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
 
 
 class Handler(BaseHTTPRequestHandler):

@@ -10,6 +10,7 @@ import pandas as pd
 from . import altdata, scoring
 
 EARN_W = 0.5
+NEWS_W = 0.20  # weight of the news-tone rank in conviction (weakest evidence of the three components; see README)
 TIERS = [(80, "Strong"), (65, "Positive"), (35, "Neutral"), (-1, "Avoid")]  # thresholds validated: monotonic alpha by tier
 
 
@@ -19,7 +20,7 @@ def earn_composite(df: pd.DataFrame) -> pd.Series:
     return e.where(df.surp.notna())
 
 
-def add_conviction(df: pd.DataFrame) -> pd.DataFrame:
+def add_conviction(df: pd.DataFrame, news_tone: pd.Series | None = None) -> pd.DataFrame:
     df = df.copy()
     if "surp" not in df:
         df["surp"] = df["beat"] = df["surp_chg"] = np.nan
@@ -28,6 +29,13 @@ def add_conviction(df: pd.DataFrame) -> pd.DataFrame:
     df["earn"] = e * 100
     df["earn_covered"] = e.notna()
     df["conviction"] = 100 * np.where(e.notna(), EARN_W * e + (1 - EARN_W) * p, p)
+    df["news"] = np.nan
+    df["news_rank"] = np.nan
+    if news_tone is not None:
+        df["news"] = news_tone.reindex(df.index)
+        r = df.news.rank(pct=True)
+        df["news_rank"] = r * 100
+        df["conviction"] = np.where(r.notna(), (1 - NEWS_W) * df.conviction + NEWS_W * 100 * r, df.conviction)
     df["verdict"] = df.conviction.map(lambda c: next(name for cut, name in TIERS if c >= cut))
     # Without earnings corroboration a theme can't be "Strong": cap price-only themes at "Positive".
     df.loc[(df.verdict == "Strong") & ~df.earn_covered, "verdict"] = "Positive"
@@ -42,8 +50,11 @@ def mask_noisy_earnings(df: pd.DataFrame, themes: dict) -> pd.DataFrame:
     return df
 
 
-def full_scan(cfg, close, vol, end=None, fundamentals=True):
-    """Price scan + earnings columns (cache only) + conviction. Returns (df, note)."""
+def full_scan(cfg, close, vol, end=None, fundamentals=True, news="off", queries=None):
+    """Price scan + earnings columns (cache only) + news tone + conviction. Returns (df, note).
+
+    news: "off" | "cache" (use data/news_live.json as is) | "fetch" (refresh if older than 6h). Only applies to the latest date.
+    """
     from pathlib import Path
 
     df, _ = scoring.scan(close, vol, close[cfg.benchmark], cfg.themes, end)
@@ -58,7 +69,23 @@ def full_scan(cfg, close, vol, end=None, fundamentals=True):
                 df = altdata.add_earnings_columns(df, earn, cfg.themes, close.index[end - 1])
         else:
             note = "Earnings data not downloaded yet, so conviction is price-only. Run 'Download data' (or `altfetch --skip-news`)."
-    df = add_conviction(mask_noisy_earnings(df, cfg.themes))
+    tone = None
+    live = end == len(close) and news != "off"
+    if live:
+        import yaml
+
+        from . import news as nw
+
+        qf = Path("news_queries.yaml")
+        q = queries or (yaml.safe_load(qf.read_text()) if qf.exists() else {})
+        keys = [k for k in cfg.themes if k in q]
+        if keys and (news == "fetch" or nw.LIVE_CACHE.exists()):
+            tone = nw.refresh_tone30(q, keys, fetch=(news == "fetch"))
+            if tone.notna().sum() < 5:
+                tone = None
+    df = add_conviction(mask_noisy_earnings(df, cfg.themes), tone)
+    if live and tone is None:
+        note = (note + " " if note else "") + "News tone not loaded (run `python -m themescan news` or the News tab once), so conviction excludes news."
     if note is None and not df.earn_covered.all():
         note = f"No earnings coverage for: {', '.join(df.index[~df.earn_covered])} (conviction = price score for these)."
     return df, note
@@ -69,6 +96,7 @@ def _chk(name, status, detail, tier):
 
 
 V, U, N = "validated", "live only, not backtestable", "tested: no edge"
+W = "weak evidence (mostly 2024+)"
 
 
 def build_checks(row: pd.Series, snap: dict | None, tone: tuple | None, macro_rank, upgr, wiki_z) -> list[dict]:
@@ -84,6 +112,9 @@ def build_checks(row: pd.Series, snap: dict | None, tone: tuple | None, macro_ra
                       "n/a" if pd.isna(row.surp_chg) else f"change {row.surp_chg:+.1f} pts", V))
     else:
         c.append(_chk("Earnings data", "na", "excluded or no coverage (e.g. crypto EPS is mark-to-market noise)", V))
+    if "news" in row and pd.notna(row.get("news")):
+        c.append(_chk("News tone (30d) in top half of themes", "pass" if row.news_rank >= 50 else "fail",
+                      f"mean headline tone {row.news:+.2f}; rank {row.news_rank:.0f}th percentile (in conviction at 20%)", W))
     ext = (row.ext > scoring.EXT_Z) or (row.rsi > scoring.EXT_RSI)
     c.append(_chk("Not already stretched", "fail" if ext else "pass", f"{row.ext:.1f} std above 200d, RSI {row.rsi:.0f} (filtering on this hurt backtests)", N))
     if snap:
@@ -108,7 +139,7 @@ def build_checks(row: pd.Series, snap: dict | None, tone: tuple | None, macro_ra
 
 def summarize(checks: list[dict]) -> dict:
     out = {}
-    for tier in (V, U, N):
+    for tier in (V, W, U, N):
         t = [c for c in checks if c["tier"] == tier and c["status"] != "na"]
         out[tier] = dict(passed=sum(c["status"] == "pass" for c in t), total=len(t))
     return out

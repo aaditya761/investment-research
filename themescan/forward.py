@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 LOG = Path("logs/forward_log.csv")
-COLS = ["universe", "asof", "theme", "conviction", "verdict", "score", "earn", "stage", "price_only", "logged_at"]
+COLS = ["universe", "asof", "theme", "conviction", "verdict", "score", "earn", "news", "stage", "price_only", "logged_at"]
 HORIZONS = (21, 63)
 
 
@@ -20,7 +20,7 @@ def write_log(universe: str, df: pd.DataFrame, asof: pd.Timestamp) -> int:
         return 0
     new = pd.DataFrame({
         "universe": universe, "asof": str(asof.date()), "theme": df.index, "conviction": df.conviction.round(2).values, "verdict": df.verdict.values,
-        "score": df.score.round(2).values, "earn": df.earn.round(2).values, "stage": df.stage.values, "price_only": (~df.earn_covered).values,
+        "score": df.score.round(2).values, "earn": df.earn.round(2).values, "news": (df.news.round(3).values if "news" in df else np.nan), "stage": df.stage.values, "price_only": (~df.earn_covered).values,
         "logged_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
     })
     pd.concat([old, new])[COLS].to_csv(LOG, index=False)
