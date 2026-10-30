@@ -63,6 +63,17 @@ strongest signal in the walk-forward tests; earnings alone failed out of sample 
 `validated` (backtested, in the score) / `live only` (valuation, estimate revisions, analyst targets, headline tone: cannot be backtested) /
 `tested: no edge` (macro tailwind, analyst upgrades, Wikipedia attention, not-stretched filter: showed no predictive value, shown as context).
 
+## Mega-themes: recognising "the AI trade" while it forms
+
+    python -m themescan clusters                      # (UI: Data & jobs > Mega-theme clusters); first run scores 5 years of weeks, then cached
+    python -m themescan clusters --seed g:crypto      # lifecycle of another theme's cluster
+
+Clusters themes by 52-week return correlation (themes that are really one trade end up together), flags a cluster **HOT** when it has >= 3 members, average price score >= 65 and
+at least half its members in the top quartile, shows how long it has been hot, a quarterly lifecycle for a seed theme, and an AI "fuel gauge" (hyperscaler capex, like-for-like).
+Retrospective on AI: the first alert (>= 4 members, >= 60% in the top quartile, avg score >= 70) fired on **2023-07-07**, about six months after AI semis began running and before the
+memory / power / Taiwan-Korea legs had made most of their moves. Tests 2020-2026: participating members of hot clusters beat other themes by about +2-3% per 6 months in both train and test
+periods; a "laggard catch-up" gap signal did **not** work out of sample. So it explains the trade and shows who is participating; it does not reliably name the next leg.
+
 ## Rotation: where does money go when a complex sells off?
 
     python -m themescan rotation                      # default source = the AI complex (AI semis, memory, Taiwan, Korea, hyperscalers, power, cloud, China internet...)

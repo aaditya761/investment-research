@@ -208,6 +208,11 @@ def build_argv(cmd: str, p: dict) -> list[str]:
         if h not in hist_files() or (v and v not in hist_files()):
             raise ValueError("pick a backtest result from the list (run a backtest first)")
         return ["research", f"data/{h}"] + (["--validate", f"data/{v}"] if v else [])
+    if cmd == "clusters":
+        seed = p.get("seed", "g:ai_semis")
+        if not re.match(r"^[gb]:[a-z_0-9]+$", seed):
+            raise ValueError("bad seed theme")
+        return (["--offline"] if p.get("offline") else []) + ["clusters", "--seed", seed]
     if cmd == "log":
         return (["--offline"] if p.get("offline") else []) + ["log"]
     if cmd == "scorelog":

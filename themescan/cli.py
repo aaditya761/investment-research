@@ -260,6 +260,48 @@ def cmd_rotation(args):
     print("  Past selloff dates: " + ", ".join(i["episodes"]))
 
 
+def cmd_clusters(args):
+    from . import clusters as cl
+    from . import rotation as ro
+
+    cfgs = {"g": load_config("themes.yaml"), "b": load_config("themes_broad.yaml")}
+    panels = {}
+    for p, cfg in cfgs.items():
+        close, vol, _ = load_prices(cfg.all_tickers, start="2018-01-01", cache_dir=args.cache, offline=args.offline)
+        panels[p] = (close, vol)
+    allt = sorted(set(cfgs["g"].all_tickers) | set(cfgs["b"].all_tickers))
+    close, vol, _ = load_prices(allt, start="2018-01-01", cache_dir=args.cache, offline=args.offline)
+    close_wd, _ = ro.weekdays(close, vol)
+    themes = ro.merge_universes(cfgs)
+    X = cl.weekly_excess(close_wd, themes)
+    print("computing weekly price scores (first run takes a few minutes; cached afterwards)...", flush=True)
+    scores = cl.weekly_scores(cfgs, panels, n_weeks=args.weeks)
+    found, asof = cl.current_clusters(X, scores)
+    print(f"\nAs of {asof.date()}: themes that move together AND are strong are one 'trade'. HOT = >= {cl.MIN_SIZE} members, avg price score >= {cl.HOT_AVG}, >= half in the top quartile.\n")
+    for c in found[: args.top]:
+        tag = "HOT " if c["hot"] else "    "
+        print(f"{tag}cluster of {c['size']}: {c['n_top']} in top quartile, avg price score {c['avg']:.0f}" + (f", hot for {c['hot_weeks']} weeks" if c["hot"] else ""))
+        print("      " + "  ".join(f"{ro.label(t, themes).split('] ')[1]}({sc:.0f})" for t, sc in c["members"][:12]) + "\n")
+    seed = args.seed
+    if seed in themes:
+        print(f"== Lifecycle of the cluster containing {seed} (quarterly) ==")
+        tl = cl.timeline(X, scores, seed)
+        tl["avg"] = tl.avg.round(0)
+        print(tl[["date", "size", "n_top", "avg", "hot", "members"]].to_string(index=False))
+        d, h = cl.first_alert(X, scores, seed)
+        print(f"\nFirst 'mega-theme alert' (>=4 members, >=60% in top quartile, avg score >=70): {d.date() if d is not None else 'none in window'}" + (f" with {h['size']} members" if d is not None else ""))
+    if args.seed == "g:ai_semis":
+        try:
+            fuel = cl.fuel_from_frame(cl.hyperscaler_capex())
+            print(f"\n== AI fuel gauge: hyperscaler capex ({', '.join(fuel['companies'])}; like-for-like) ==")
+            print(f"  quarter ending {fuel['quarter']}: ${fuel['latest']:.0f}B" + (f", {fuel['yoy'] * 100:+.0f}% vs a year earlier" if 'yoy' in fuel else "") + (f", {fuel['qoq'] * 100:+.0f}% vs prior quarter" if 'qoq' in fuel else ""))
+            print("  The downstream legs (chips, memory, power, cybersecurity) are paid for by this spending. Rising capex while prices fall = fundamentals not (yet) confirming the selloff; a capex cut would be the real warning.")
+        except Exception as e:
+            print(f"(capex data unavailable: {e})")
+    print("\nEvidence (2020-2026 tests): participating members of hot clusters beat other themes by ~2-3% per 6 months in both train and test periods;")
+    print("a 'laggard catch-up' signal did NOT hold out of sample, so this does not reliably name the next leg.")
+
+
 def main(argv=None):
     warnings.filterwarnings("ignore")
     p = argparse.ArgumentParser(prog="themescan")
@@ -296,6 +338,11 @@ def main(argv=None):
     ro_.add_argument("--drop", type=float, default=10.0, help="selloff threshold in percent below the 60-day high, for the historical study")
     ro_.add_argument("--top", type=int, default=20)
     ro_.set_defaults(fn=cmd_rotation)
+    cx = sub.add_parser("clusters", help="mega-theme detector: groups of correlated, strong themes + lifecycle + AI fuel gauge")
+    cx.add_argument("--seed", default="g:ai_semis", help="theme whose cluster lifecycle to show")
+    cx.add_argument("--weeks", type=int, default=260, help="weeks of history to score (cached)")
+    cx.add_argument("--top", type=int, default=8)
+    cx.set_defaults(fn=cmd_clusters)
     lg = sub.add_parser("log", help="forward test: record today's verdicts to logs/forward_log.csv")
     lg.add_argument("--universes", nargs="+", default=["themes.yaml", "themes_india.yaml"])
     lg.set_defaults(fn=cmd_log)
