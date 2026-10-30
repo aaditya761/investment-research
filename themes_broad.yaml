@@ -1,0 +1,607 @@
+# Broad rule-based ETF-only universe (no hand-picked stocks). Includes themes that faded (cannabis, ARK, metaverse, SPAC-era) so the
+# backtest sees real misses. Tickers that don't exist / lack history are skipped automatically. Used to check the price score out-of-universe.
+benchmark: ACWI
+events: []
+themes:
+  us_tech:
+    label: Us Tech
+    etfs:
+    - XLK
+    - VGT
+    stocks: []
+  us_financials:
+    label: Us Financials
+    etfs:
+    - XLF
+    - VFH
+    stocks: []
+  us_energy:
+    label: Us Energy
+    etfs:
+    - XLE
+    - VDE
+    stocks: []
+  us_health:
+    label: Us Health
+    etfs:
+    - XLV
+    - VHT
+    stocks: []
+  us_industrials:
+    label: Us Industrials
+    etfs:
+    - XLI
+    - VIS
+    stocks: []
+  us_materials:
+    label: Us Materials
+    etfs:
+    - XLB
+    - VAW
+    stocks: []
+  us_utilities:
+    label: Us Utilities
+    etfs:
+    - XLU
+    - VPU
+    stocks: []
+  us_staples:
+    label: Us Staples
+    etfs:
+    - XLP
+    - VDC
+    stocks: []
+  us_discretionary:
+    label: Us Discretionary
+    etfs:
+    - XLY
+    - VCR
+    stocks: []
+  us_comm:
+    label: Us Comm
+    etfs:
+    - XLC
+    - VOX
+    stocks: []
+  us_realestate:
+    label: Us Realestate
+    etfs:
+    - XLRE
+    - VNQ
+    stocks: []
+  canada:
+    label: Canada
+    etfs:
+    - EWC
+    - FLCA
+    stocks: []
+  australia:
+    label: Australia
+    etfs:
+    - EWA
+    - FLAU
+    stocks: []
+  uk:
+    label: Uk
+    etfs:
+    - EWU
+    - FLGB
+    stocks: []
+  france:
+    label: France
+    etfs:
+    - EWQ
+    - FLFR
+    stocks: []
+  germany:
+    label: Germany
+    etfs:
+    - EWG
+    - FLGR
+    stocks: []
+  switzerland:
+    label: Switzerland
+    etfs:
+    - EWL
+    - FLSW
+    stocks: []
+  sweden:
+    label: Sweden
+    etfs:
+    - EWD
+    - FLSE
+    stocks: []
+  spain:
+    label: Spain
+    etfs:
+    - EWP
+    - FLSP
+    stocks: []
+  italy:
+    label: Italy
+    etfs:
+    - EWI
+    - FLIY
+    stocks: []
+  netherlands:
+    label: Netherlands
+    etfs:
+    - EWN
+    stocks: []
+  singapore:
+    label: Singapore
+    etfs:
+    - EWS
+    - FLSG
+    stocks: []
+  hong_kong:
+    label: Hong Kong
+    etfs:
+    - EWH
+    - FLHK
+    stocks: []
+  japan:
+    label: Japan
+    etfs:
+    - EWJ
+    - DXJ
+    - FLJP
+    stocks: []
+  korea:
+    label: Korea
+    etfs:
+    - EWY
+    - FLKR
+    stocks: []
+  taiwan:
+    label: Taiwan
+    etfs:
+    - EWT
+    - FLTW
+    stocks: []
+  india:
+    label: India
+    etfs:
+    - INDA
+    - EPI
+    - SMIN
+    stocks: []
+  china:
+    label: China
+    etfs:
+    - FXI
+    - MCHI
+    - ASHR
+    stocks: []
+  brazil:
+    label: Brazil
+    etfs:
+    - EWZ
+    - FLBR
+    stocks: []
+  mexico:
+    label: Mexico
+    etfs:
+    - EWW
+    - FLMX
+    stocks: []
+  south_africa:
+    label: South Africa
+    etfs:
+    - EZA
+    stocks: []
+  turkey:
+    label: Turkey
+    etfs:
+    - TUR
+    stocks: []
+  indonesia:
+    label: Indonesia
+    etfs:
+    - EIDO
+    stocks: []
+  thailand:
+    label: Thailand
+    etfs:
+    - THD
+    stocks: []
+  vietnam:
+    label: Vietnam
+    etfs:
+    - VNM
+    stocks: []
+  malaysia:
+    label: Malaysia
+    etfs:
+    - EWM
+    stocks: []
+  philippines:
+    label: Philippines
+    etfs:
+    - EPHE
+    stocks: []
+  poland:
+    label: Poland
+    etfs:
+    - EPOL
+    stocks: []
+  chile:
+    label: Chile
+    etfs:
+    - ECH
+    stocks: []
+  argentina:
+    label: Argentina
+    etfs:
+    - ARGT
+    stocks: []
+  saudi:
+    label: Saudi
+    etfs:
+    - KSA
+    stocks: []
+  israel:
+    label: Israel
+    etfs:
+    - EIS
+    stocks: []
+  emerging:
+    label: Emerging
+    etfs:
+    - VWO
+    - EEM
+    - IEMG
+    stocks: []
+  europe:
+    label: Europe
+    etfs:
+    - VGK
+    - EZU
+    - FEZ
+    stocks: []
+  frontier:
+    label: Frontier
+    etfs:
+    - FM
+    stocks: []
+  value:
+    label: Value
+    etfs:
+    - VTV
+    - IWD
+    stocks: []
+  growth:
+    label: Growth
+    etfs:
+    - VUG
+    - IWF
+    stocks: []
+  momentum_factor:
+    label: Momentum Factor
+    etfs:
+    - MTUM
+    stocks: []
+  quality:
+    label: Quality
+    etfs:
+    - QUAL
+    stocks: []
+  low_vol:
+    label: Low Vol
+    etfs:
+    - USMV
+    - SPLV
+    stocks: []
+  small_caps:
+    label: Small Caps
+    etfs:
+    - IWM
+    - IJR
+    stocks: []
+  mid_caps:
+    label: Mid Caps
+    etfs:
+    - IJH
+    - MDY
+    stocks: []
+  dividend:
+    label: Dividend
+    etfs:
+    - DVY
+    - SCHD
+    stocks: []
+  equal_weight:
+    label: Equal Weight
+    etfs:
+    - RSP
+    stocks: []
+  intl_dev:
+    label: Intl Dev
+    etfs:
+    - EFA
+    - VEA
+    stocks: []
+  gold:
+    label: Gold
+    etfs:
+    - GLD
+    - IAU
+    stocks: []
+  gold_miners:
+    label: Gold Miners
+    etfs:
+    - GDX
+    - GDXJ
+    stocks: []
+  silver:
+    label: Silver
+    etfs:
+    - SLV
+    - SIL
+    stocks: []
+  copper:
+    label: Copper
+    etfs:
+    - CPER
+    - COPX
+    stocks: []
+  oil:
+    label: Oil
+    etfs:
+    - USO
+    - BNO
+    stocks: []
+  nat_gas:
+    label: Nat Gas
+    etfs:
+    - UNG
+    - BOIL
+    stocks: []
+  agriculture:
+    label: Agriculture
+    etfs:
+    - DBA
+    - MOO
+    stocks: []
+  broad_commodities:
+    label: Broad Commodities
+    etfs:
+    - DBC
+    - GSG
+    stocks: []
+  uranium:
+    label: Uranium
+    etfs:
+    - URA
+    - URNM
+    stocks: []
+  lithium_batt:
+    label: Lithium Batt
+    etfs:
+    - LIT
+    - BATT
+    stocks: []
+  long_treasuries:
+    label: Long Treasuries
+    etfs:
+    - TLT
+    - VGLT
+    stocks: []
+  intermediate_treasuries:
+    label: Intermediate Treasuries
+    etfs:
+    - IEF
+    - VGIT
+    stocks: []
+  tips:
+    label: Tips
+    etfs:
+    - TIP
+    - SCHP
+    stocks: []
+  high_yield:
+    label: High Yield
+    etfs:
+    - HYG
+    - JNK
+    stocks: []
+  inv_grade:
+    label: Inv Grade
+    etfs:
+    - LQD
+    - VCIT
+    stocks: []
+  em_bonds:
+    label: Em Bonds
+    etfs:
+    - EMB
+    - PCY
+    stocks: []
+  dollar:
+    label: Dollar
+    etfs:
+    - UUP
+    stocks: []
+  yen:
+    label: Yen
+    etfs:
+    - FXY
+    stocks: []
+  euro:
+    label: Euro
+    etfs:
+    - FXE
+    stocks: []
+  ark_innovation:
+    label: Ark Innovation
+    etfs:
+    - ARKK
+    - ARKW
+    - ARKG
+    stocks: []
+  robotics_ai:
+    label: Robotics Ai
+    etfs:
+    - BOTZ
+    - ROBO
+    stocks: []
+  airlines_travel:
+    label: Airlines Travel
+    etfs:
+    - JETS
+    - PEJ
+    stocks: []
+  homebuilders:
+    label: Homebuilders
+    etfs:
+    - XHB
+    - ITB
+    stocks: []
+  cannabis:
+    label: Cannabis
+    etfs:
+    - MJ
+    - YOLO
+    stocks: []
+  fintech:
+    label: Fintech
+    etfs:
+    - FINX
+    - IPAY
+    stocks: []
+  gaming_esports:
+    label: Gaming Esports
+    etfs:
+    - ESPO
+    - HERO
+    stocks: []
+  clean_energy:
+    label: Clean Energy
+    etfs:
+    - TAN
+    - ICLN
+    - PBW
+    stocks: []
+  cybersecurity:
+    label: Cybersecurity
+    etfs:
+    - CIBR
+    - HACK
+    stocks: []
+  biotech:
+    label: Biotech
+    etfs:
+    - XBI
+    - IBB
+    stocks: []
+  semis:
+    label: Semis
+    etfs:
+    - SMH
+    - SOXX
+    stocks: []
+  cloud:
+    label: Cloud
+    etfs:
+    - SKYY
+    - WCLD
+    stocks: []
+  social_media:
+    label: Social Media
+    etfs:
+    - SOCL
+    stocks: []
+  genomics:
+    label: Genomics
+    etfs:
+    - ARKG
+    - IDNA
+    stocks: []
+  solar:
+    label: Solar
+    etfs:
+    - TAN
+    - RAYS
+    stocks: []
+  water:
+    label: Water
+    etfs:
+    - PHO
+    - CGW
+    stocks: []
+  infrastructure:
+    label: Infrastructure
+    etfs:
+    - PAVE
+    - IFRA
+    stocks: []
+  defense:
+    label: Defense
+    etfs:
+    - ITA
+    - PPA
+    stocks: []
+  shipping_transport:
+    label: Shipping Transport
+    etfs:
+    - IYT
+    - SEA
+    stocks: []
+  regional_banks:
+    label: Regional Banks
+    etfs:
+    - KRE
+    - KBE
+    stocks: []
+  reits_mortgage:
+    label: Reits Mortgage
+    etfs:
+    - REM
+    - MORT
+    stocks: []
+  china_internet:
+    label: China Internet
+    etfs:
+    - KWEB
+    - CQQQ
+    stocks: []
+  ev_autonomous:
+    label: Ev Autonomous
+    etfs:
+    - DRIV
+    - IDRV
+    stocks: []
+  crypto:
+    label: Crypto
+    etfs:
+    - IBIT
+    - ETHA
+    - BITO
+    stocks: []
+  metaverse_3d:
+    label: Metaverse 3D
+    etfs:
+    - METV
+    stocks: []
+  space:
+    label: Space
+    etfs:
+    - UFO
+    - ARKX
+    stocks: []
+  psychedelics_health:
+    label: Psychedelics Health
+    etfs:
+    - PSIL
+    stocks: []
+  sports_betting:
+    label: Sports Betting
+    etfs:
+    - BETZ
+    stocks: []
+  coal_old_energy:
+    label: Coal Old Energy
+    etfs:
+    - KOL
+    - XES
+    stocks: []

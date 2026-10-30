@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 import warnings
 
 import pandas as pd
@@ -49,6 +50,7 @@ def cmd_scan(args):
     print("Strong >= 80 | Positive 65-80 | Neutral 35-65 | Avoid < 35.  Tiers were monotonic in walk-forward tests on global and India themes.")
     if note:
         print(f"note: {note}")
+    print("Use as a tilt (avoid the Avoid list, favour Strong/Positive across a diversified set); a concentrated top-5 rotation did not hold up on a broad universe.")
     top, avoid = df[df.verdict.isin(["Strong", "Positive"])], df[df.verdict == "Avoid"]
     print("\n== STRONG / POSITIVE ==")
     print(_fmt(top).to_string() if len(top) else "none")
@@ -180,6 +182,41 @@ def cmd_ui(args):
     ui.serve(args.port, not args.no_browser)
 
 
+def cmd_portfolio(args):
+    from . import portfolio
+
+    cfg = load_config(args.themes)
+    hist = pd.read_csv(args.hist)
+    ef = portfolio.earn_features_for(hist, cfg, cache=f"data/earn_feat_{Path(args.hist).stem}.csv")
+    panel = portfolio.build_panel(hist, ef)
+    print(portfolio.report(panel, n=args.n, every=args.every, cost_bps=args.cost))
+
+
+def cmd_log(args):
+    from . import forward, verify
+
+    for u in args.universes:
+        cfg = load_config(u)
+        close, vol = _load(args, cfg)
+        df, _ = verify.full_scan(cfg, close, vol)
+        n = forward.write_log(Path(u).name, df, close.index[-1])
+        print(f"{u}: {'logged ' + str(n) + ' themes' if n else 'already logged'} for {close.index[-1].date()}  "
+              f"(Strong {int((df.verdict == 'Strong').sum())}, Positive {int((df.verdict == 'Positive').sum())}, Avoid {int((df.verdict == 'Avoid').sum())})")
+    print(f"log file: {forward.LOG}  (commit it to keep an auditable history)")
+
+
+def cmd_scorelog(args):
+    from . import forward
+
+    panels = {}
+    if forward.LOG.exists():
+        for u in pd.read_csv(forward.LOG).universe.unique():
+            cfg = load_config(u)
+            close, _ = _load(args, cfg)
+            panels[u] = (cfg, close)
+    print(forward.score_log(panels))
+
+
 def main(argv=None):
     warnings.filterwarnings("ignore")
     p = argparse.ArgumentParser(prog="themescan")
@@ -210,6 +247,17 @@ def main(argv=None):
     u.add_argument("--port", type=int, default=8765)
     u.add_argument("--no-browser", action="store_true")
     u.set_defaults(fn=cmd_ui)
+    lg = sub.add_parser("log", help="forward test: record today's verdicts to logs/forward_log.csv")
+    lg.add_argument("--universes", nargs="+", default=["themes.yaml", "themes_india.yaml"])
+    lg.set_defaults(fn=cmd_log)
+    sl = sub.add_parser("scorelog", help="forward test: score logged picks that have matured")
+    sl.set_defaults(fn=cmd_scorelog)
+    pf = sub.add_parser("portfolio", help="top-N rotation backtest vs baselines + permutation test")
+    pf.add_argument("hist", help="CSV from `backtest --csv`")
+    pf.add_argument("--n", type=int, default=5)
+    pf.add_argument("--every", type=int, default=4, help="weeks between rebalances")
+    pf.add_argument("--cost", type=float, default=10.0, help="bps per one-way trade")
+    pf.set_defaults(fn=cmd_portfolio)
     vf = sub.add_parser("verify", help="full evidence checklist for one or more themes")
     vf.add_argument("theme", nargs="+")
     vf.set_defaults(fn=cmd_verify)

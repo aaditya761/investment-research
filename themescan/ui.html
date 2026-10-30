@@ -117,6 +117,11 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
       <div class="card"><h3>5 · Research</h3><p>Which signals predicted forward returns, with a train/test split. Needs a backtest result.</p>
         <div class="row"><label>Result <select id="j-hist"></select></label><label>Validate on <select id="j-val"></select></label></div>
         <button class="primary" data-job="research">Run research</button></div>
+      <div class="card"><h3>6 · Portfolio backtest</h3><p>Hold the top-N themes by each signal and compare with plain trend / momentum baselines, after costs, with a random-picks test.</p>
+        <div class="row"><label>Result <select id="j-hist2"></select></label><label>Top N <input type="number" id="j-n2" value="5" min="1" max="20" style="width:56px"></label><label>Rebalance (weeks) <input type="number" id="j-every" value="4" min="1" max="26" style="width:56px"></label><label>Cost (bps) <input type="number" id="j-cost" value="10" min="0" max="200" style="width:64px"></label></div>
+        <button class="primary" data-job="portfolio">Run portfolio backtest</button></div>
+      <div class="card"><h3>7 · Forward test</h3><p>Record today's Strong / Positive / Avoid picks to <code>logs/forward_log.csv</code>, then score them once 21 and 63 trading days have passed. This is the hindsight-free check. Log weekly.</p>
+        <div class="row"><button class="primary" data-job="log">Log today's picks</button><button data-job="scorelog">Score past picks</button></div></div>
     </div>
     <p class="cmd" id="jobCmd">&nbsp;</p>
     <div class="row"><b id="jobTitle">Console</b><span id="jobState" class="dim"></span><button id="cancelBtn" disabled>Cancel</button><button id="clearBtn">Clear</button></div>
@@ -129,7 +134,7 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
       <p><b>Conviction (0–100)</b> = 50% <b>price score</b> (rising 200-day trend 50%, relative strength 30%, distance above the 200-day average 20%) + 50% <b>earnings</b> (EPS surprise 50%, beat rate 30%, surprise trend 20%). Earnings is the largest single component because it was the strongest signal in the backtests; pure earnings failed on India, so it isn't 100%.</p>
       <p><span class="badge b-Strong">Strong</span> ≥ 80 · <span class="badge b-Positive">Positive</span> 65–80 · <span class="badge b-Neutral">Neutral</span> 35–65 · <span class="badge b-Avoid">Avoid</span> &lt; 35. In tests the average quarterly return vs other themes rose with each tier on both the global and India universes. Themes without usable earnings (e.g. crypto) are <i>price-only</i> and can't be Strong.</p>
       <p><b>Evidence checklist</b> (click a theme): every other source is checked but <u>not scored</u>. Tags show how much to trust each: <span class="tag v">validated</span> backtested and used in the score; <span class="tag">live only</span> valuation, estimate revisions, analyst targets and headlines can't be backtested; <span class="tag">tested: no edge</span> macro, analyst upgrades, attention and "not stretched" showed no predictive value, so they are context only.</p>
-      <p>Backtests show this describes what is already working and avoids what isn't; it does not predict the next bull run. This is a research screen, not investment advice.</p>
+      <p><b>How to use it:</b> as a tilt. Avoid the Avoid themes and favour Strong / Positive ones across a diversified set. On a broad rule-based universe a concentrated top-5 rotation did <u>not</u> beat random picks; dropping the weakest themes did help (about +1 to +3% a year). Log picks weekly (Data &amp; jobs, card 7) for a hindsight-free check. It describes what is already working; it does not predict the next bull run. This is a research screen, not investment advice.</p>
       <p>Click a theme row to see its tickers, live headlines and a valuation snapshot. Everything here runs on your machine: the page talks only to <code>127.0.0.1</code>.</p>
     </div>
   </section>
@@ -255,6 +260,7 @@ function jobBody(cmd){
   if(cmd==='headlines'){ b.n=+$('#j-n').value; }
   if(cmd==='backtest'){ b.start=$('#j-start').value; b.step=+$('#j-step').value; }
   if(cmd==='research'){ b.hist=$('#j-hist').value; b.validate=$('#j-val').value; }
+  if(cmd==='portfolio'){ b.hist=$('#j-hist2').value; b.n=+$('#j-n2').value; b.every=+$('#j-every').value; b.cost=+$('#j-cost').value; }
   return b;
 }
 $$('[data-job]').forEach(btn => btn.onclick = async () => {
@@ -280,7 +286,7 @@ async function refreshConfig(){
   const u = $('#universe'), cur = u.value;
   u.innerHTML = Object.keys(CFG.universes).map(k=>`<option value="${k}">${k.replace('.yaml','')} (vs ${esc(CFG.universes[k].benchmark)})</option>`).join(''); if(cur) u.value = cur;
   const opts = CFG.hist.map(h=>`<option>${h}</option>`).join('');
-  $('#j-hist').innerHTML = opts || '<option value="">(run a backtest first)</option>';
+  $('#j-hist').innerHTML = opts || '<option value="">(run a backtest first)</option>'; $('#j-hist2').innerHTML = opts || '<option value="">(run a backtest first)</option>';
   $('#j-val').innerHTML = '<option value="">(none)</option>' + opts;
 }
 refreshConfig().catch(e => $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`);

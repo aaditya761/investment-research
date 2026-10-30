@@ -39,6 +39,9 @@ Global options go **before** the subcommand: `--themes FILE`, `--demo`, `--offli
     python -m themescan --csv data/hist_global.csv backtest --bt-start 2019-06-01 --step 5
     python -m themescan --themes themes_india.yaml --csv data/hist_india.csv backtest --bt-start 2019-06-01 --step 5
     python -m themescan research data/hist_global.csv --validate data/hist_india.csv
+    python -m themescan portfolio data/hist_global.csv         # top-N rotation vs baselines + random-picks test
+    python -m themescan log                                    # forward test: record today's picks (run weekly, commit logs/)
+    python -m themescan scorelog                               # score picks once 21 / 63 trading days have passed
     python -m themescan research data/hist_global.csv --blend  # test earnings weight (0%..100%) in the score
 
 Typical routine: `scan` (add `--detail` for any theme you care about) -> `headlines` for the Leading ones -> `fundamentals` for valuation.
@@ -59,6 +62,25 @@ strongest signal in the walk-forward tests; earnings alone failed out of sample 
 **Evidence checklist** (`verify` command, or click a theme in the UI): every other source is checked but **not scored**, each tagged by how much to trust it:
 `validated` (backtested, in the score) / `live only` (valuation, estimate revisions, analyst targets, headline tone: cannot be backtested) /
 `tested: no edge` (macro tailwind, analyst upgrades, Wikipedia attention, not-stretched filter: showed no predictive value, shown as context).
+
+## Reality check: how to use it (portfolio tests, `portfolio` command)
+
+Three universes: the hand-picked global themes, India sectors, and a **broad rule-based ETF universe** (`themes_broad.yaml`, 95 themes including faded
+ones such as cannabis, ARK and metaverse) added to remove selection bias.
+
+| Use | Global | India | Broad ETFs |
+|---|---|---|---|
+| Hold top-5 by conviction (excess vs benchmark, net of costs) | +12%/yr, IR 0.8 | +16%/yr, IR 1.0 | **~0%/yr, IR 0.01, max drawdown -55%; random picks do as well (p = 0.25)** |
+| Drop the bottom 30-50% of themes vs holding all (test period) | +2.0 to +3.3%/yr | +2.8 to +2.9%/yr | +0.7 to +1.7%/yr |
+
+- The hand-picked universes flatter any strategy: simply holding all of their themes already beat the benchmark (+3.7%/yr global, +10.8%/yr India) because
+  they were chosen with hindsight. Treat the global/India top-5 numbers as upper bounds.
+- The ranking is real but weak: on the broad set, forward alpha rises almost monotonically by score decile (-1.7% to +1.5% per quarter).
+- A concentrated 5-theme rotation is **not supported**: picks are correlated (e.g. four oil/energy themes at once) and momentum reversals cause deep drawdowns.
+  Diversifying helps (top-30: IR 0.19, drawdown -23%).
+- Plain trend or momentum earns about as much as conviction (conviction is mainly better risk-adjusted on the global set; on India plain momentum was as good or better).
+- **Supported use:** tilt away from Avoid themes and toward Strong/Positive across a diversified set. Not: bet the portfolio on the top few.
+- **The honest verdict comes from the forward test** (`log` weekly, `scorelog` later): it records picks before the outcome is known.
 
 ## Validation (`python -m themescan research data/hist_global.csv --validate data/hist_india.csv`)
 

@@ -184,6 +184,16 @@ def build_argv(cmd: str, p: dict) -> list[str]:
         if h not in hist_files() or (v and v not in hist_files()):
             raise ValueError("pick a backtest result from the list (run a backtest first)")
         return ["research", f"data/{h}"] + (["--validate", f"data/{v}"] if v else [])
+    if cmd == "log":
+        return (["--offline"] if p.get("offline") else []) + ["log"]
+    if cmd == "scorelog":
+        return (["--offline"] if p.get("offline") else []) + ["scorelog"]
+    if cmd == "portfolio":
+        h = p.get("hist")
+        n, every, cost = int(p.get("n", 5)), int(p.get("every", 4)), float(p.get("cost", 10))
+        if h not in hist_files() or not (1 <= n <= 20 and 1 <= every <= 26 and 0 <= cost <= 200):
+            raise ValueError("pick a backtest result and sensible parameters")
+        return glob + ["portfolio", f"data/{h}", "--n", str(n), "--every", str(every), "--cost", str(cost)]
     raise ValueError("unknown command")
 
 
