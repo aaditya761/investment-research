@@ -68,7 +68,7 @@ def full_scan(cfg, close, vol, end=None, fundamentals=True, news="off", queries=
             if len(earn):
                 df = altdata.add_earnings_columns(df, earn, cfg.themes, close.index[end - 1])
         else:
-            note = "Earnings data not downloaded yet, so conviction is price-only. Run 'Download data' (or `altfetch --skip-news`)."
+            note = "Earnings history is not downloaded yet, so conviction is price + news only. Press Update on the Earnings card (or run `python -m themescan altfetch --skip-news`)."
     tone, keys = None, []
     live = end == len(close) and news != "off"
     if live:
@@ -85,7 +85,7 @@ def full_scan(cfg, close, vol, end=None, fundamentals=True, news="off", queries=
                 tone = None
     df = add_conviction(mask_noisy_earnings(df, cfg.themes), tone)
     if live and tone is None and keys:
-        note = (note + " " if note else "") + "News tone not loaded (run `python -m themescan news` or the News tab once), so conviction excludes news."
+        note = (note + " " if note else "") + "News tone is not loaded yet, so conviction excludes news. Press Update on the News card (or run `python -m themescan newstone`)."
     if note is None and not df.earn_covered.all():
         note = f"No earnings coverage for: {', '.join(df.index[~df.earn_covered])} (conviction = price score for these)."
     return df, note

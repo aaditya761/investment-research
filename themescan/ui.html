@@ -9,12 +9,14 @@
   --bg:#f6f7f9; --surface:#fff; --text:#1b1f27; --muted:#667085; --line:#e4e7ec; --accent:#2f5bea; --accent-ink:#fff;
   --good:#117a46; --good-bg:#dff5e8; --warn:#8a5a00; --warn-bg:#fdf0d2; --bad:#b42318; --bad-bg:#fde4e1;
   --info:#1f4fb4; --info-bg:#e1ebfd; --neutral:#475467; --neutral-bg:#eceff3; --code-bg:#101828; --code-ink:#d7e0ee;
+  --c1:#2f5bea; --c2:#12a150; --c3:#d98a00;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0f1218; --surface:#171b23; --text:#e7eaf0; --muted:#98a2b3; --line:#2a303c; --accent:#6d8dff; --accent-ink:#0b0f1a;
     --good:#58d68d; --good-bg:#12301f; --warn:#f0c15a; --warn-bg:#3a2d0c; --bad:#ff8a80; --bad-bg:#3b1a17;
     --info:#8fb0ff; --info-bg:#17274d; --neutral:#aab3c2; --neutral-bg:#232936; --code-bg:#0a0d13; --code-ink:#cbd5e5;
+    --c1:#6d8dff; --c2:#4cd98a; --c3:#f0b24a;
   }
 }
 *{box-sizing:border-box}
@@ -28,7 +30,8 @@ button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(-
 button:hover{border-color:var(--accent)}
 button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
 button:disabled{opacity:.55;cursor:not-allowed}
-main{max-width:1400px;margin:0 auto;padding:16px}
+main{max-width:1400px;margin:0 auto;padding:16px;min-width:0}
+body{padding-bottom:64px}
 .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
 .tab{padding:8px 14px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;color:var(--muted)}
 .tab.on{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
@@ -55,7 +58,7 @@ tr:last-child td{border-bottom:0}
 .score i{display:block;height:6px;border-radius:3px;background:var(--accent);opacity:.8}
 .pos{color:var(--good)}.neg{color:var(--bad)}.dim{color:var(--muted)}
 .leaders{max-width:230px;overflow:hidden;text-overflow:ellipsis;text-align:left;color:var(--muted)}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:14px}.cards>*{min-width:0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
 .card h3{margin:0 0 4px;font-size:15px}.card p{margin:0 0 10px;color:var(--muted);font-size:13px}
 .row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:10px}
@@ -72,6 +75,43 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px}
 @keyframes s{to{transform:rotate(360deg)}}
 @media (max-width:640px){main{padding:12px}.bar{gap:8px}}
+
+.pipe{display:grid;grid-template-columns:minmax(0,1.7fr) 40px minmax(0,.9fr) 28px minmax(0,1fr);align-items:stretch;margin-bottom:14px}
+.pipe .col{display:flex;flex-direction:column;gap:10px}
+.in{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:10px;padding:11px 13px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:center}
+.in h4{margin:0;font-size:14px}.in h4 .w{font-weight:600;font-size:12px;color:var(--c);margin-left:6px}
+.in .why{grid-column:1;color:var(--muted);font-size:12.5px}.in .st{grid-column:1;font-size:12.5px}.in button{grid-column:2;grid-row:1 / span 3;align-self:center}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0;background:var(--muted)}.dot.ok{background:var(--good)}.dot.warn{background:#e0a100}.dot.bad{background:var(--bad)}
+.node{background:var(--surface);border:2px solid var(--accent);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;justify-content:center;gap:6px}
+.node h4{margin:0;font-size:15px}.node small{color:var(--muted);font-size:12px}.node .big{font-size:13px;font-weight:600}
+.verdicts{display:flex;flex-wrap:wrap;gap:6px}.verdicts .badge{cursor:pointer;font-size:12.5px}
+.arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px}.arrow svg{width:100%;height:100%;overflow:visible}
+.flow{fill:none;stroke-width:2;vector-effect:non-scaling-stroke}
+.pipehint{color:var(--muted);font-size:12.5px;margin:-6px 0 12px}
+.banner{background:var(--info-bg);color:var(--info);border-radius:9px;padding:10px 14px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start}
+.banner .body{flex:1;min-width:0}.banner .chgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.banner .chgs span{background:var(--surface);color:var(--text);border-radius:999px;padding:2px 10px;font-size:12.5px}
+.banner .x2{background:none;border:0;color:inherit;font-size:16px;padding:0 4px}
+tr.chg td{animation:flash 4s ease-out}@keyframes flash{0%{background:var(--warn-bg)}100%{background:transparent}}
+.dl.up{color:var(--good)}.dl.dn{color:var(--bad)}
+th.g{cursor:default;text-align:center;font-size:11px;letter-spacing:.4px;text-transform:uppercase;border-bottom:2px solid var(--line)}
+th.g1{border-bottom-color:var(--c1);color:var(--c1)}th.g2{border-bottom-color:var(--c2);color:var(--c2)}th.g3{border-bottom-color:var(--c3);color:var(--c3)}
+th.i1{box-shadow:inset 0 -3px 0 var(--c1)}th.i2{box-shadow:inset 0 -3px 0 var(--c2)}th.i3{box-shadow:inset 0 -3px 0 var(--c3)}
+button.busy{opacity:.85;cursor:progress}
+.toasts{position:fixed;top:64px;right:14px;display:flex;flex-direction:column;gap:8px;z-index:30;width:min(380px,calc(100% - 28px))}
+.toast{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--info);border-radius:8px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px;cursor:pointer}
+.toast.ok{border-left-color:var(--good)}.toast.err{border-left-color:var(--bad)}
+.dock{position:fixed;left:0;right:0;bottom:0;background:var(--code-bg);color:var(--code-ink);z-index:20;border-top:1px solid #000}
+.dock .bar2{display:flex;gap:10px;align-items:center;padding:8px 14px;max-width:1400px;margin:0 auto;font-size:13px}
+.dock .bar2 .last{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9fb0c8;font:12px ui-monospace,Menlo,monospace}
+.dock button{background:#1b2536;color:#d7e0ee;border-color:#2c3a52;padding:4px 10px}
+.dock .log{display:none;max-width:1400px;margin:0 auto;padding:0 14px 10px}.dock.open .log{display:block}
+.dock pre{max-height:38vh;background:#05070b;border:1px solid #1d2636}
+.dock .jobs{display:flex;gap:6px}.dock .jp{padding:2px 9px;border-radius:999px;background:#1b2536;border:1px solid #2c3a52;cursor:pointer;font-size:12px}.dock .jp.on{border-color:#6d8dff}
+.chipjobs{display:none;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:4px 12px;font-size:13px;cursor:pointer;border:0}
+.tag.ctx{background:var(--info-bg);color:var(--info)}.tag.val{background:var(--warn-bg);color:var(--warn)}
+.group{margin:22px 0 8px}.group h3{margin:0;font-size:15px}.group p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.card .tags{margin-bottom:6px}
+@media (max-width:900px){.pipe{grid-template-columns:1fr}.pipe .arrow{display:none}.pipe .col{margin-bottom:10px}}
 </style>
 </head>
 <body>
@@ -80,40 +120,76 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
     <h1>Themescan</h1>
     <label>Universe <select id="universe"></select></label>
     <label>As of <input type="date" id="asof"></label>
-    <label><input type="checkbox" id="offline"> Cached prices only</label>
-    <label><input type="checkbox" id="demo"> Demo data</label>
+    <label title="Use only prices already downloaded"><input type="checkbox" id="offline"> Cached prices only</label>
+    <label title="Synthetic data, no network. Update buttons are disabled."><input type="checkbox" id="demo"> Demo data</label>
     <button class="primary" id="scanBtn">Scan</button>
-    <span id="status" class="dim"></span>
+    <button class="chipjobs" id="jobsChip"></button>
   </div>
 </header>
+<div class="toasts" id="toasts"></div>
+
 <main>
   <div class="tabs">
-    <button class="tab on" data-tab="scan">Scan</button>
+    <button class="tab on" data-tab="dash">Dashboard</button>
     <button class="tab" data-tab="news">News</button>
     <button class="tab" data-tab="rot">Rotation</button>
-    <button class="tab" data-tab="jobs">Data &amp; jobs</button>
+    <button class="tab" data-tab="tools">Tools</button>
     <button class="tab" data-tab="help">Help</button>
   </div>
 
-  <section class="panel on" id="p-scan">
+  <!-- ================= DASHBOARD ================= -->
+  <section class="panel on" id="p-dash">
+    <p class="meta" style="margin-bottom:8px"><b>How the score is built.</b> Three data inputs feed one conviction score, which gives each theme its verdict. Update an input and the table below re-scans and highlights what changed.</p>
+    <div class="pipe" id="pipe">
+      <div class="col">
+        <div class="in" style="--c:var(--c1)">
+          <h4>① Prices &amp; trend <span class="w">40%</span></h4>
+          <div class="why">200-day trend slope, relative strength vs the benchmark, distance above the 200-day average.</div>
+          <div class="st" id="st-prices">checking…</div>
+          <button class="primary" data-node="prices" id="btn-prices">Update</button>
+        </div>
+        <div class="in" style="--c:var(--c2)">
+          <h4>② Earnings <span class="w">40%</span></h4>
+          <div class="why">EPS surprise, beat rate and surprise trend of each theme's stocks over 120 days.</div>
+          <div class="st" id="st-earnings">checking…</div>
+          <button class="primary" data-node="earnings" id="btn-earnings">Update</button>
+        </div>
+        <div class="in" style="--c:var(--c3)">
+          <h4>③ News tone <span class="w">20%</span></h4>
+          <div class="why">Average headline tone over the last 30 days (Google News), ranked across themes.</div>
+          <div class="st" id="st-news">checking…</div>
+          <button class="primary" data-node="news" id="btn-news">Update</button>
+        </div>
+      </div>
+      <div class="arrow"><svg viewBox="0 0 40 100" preserveAspectRatio="none"><path class="flow" stroke="var(--c1)" d="M0 17 C22 17 18 50 40 50"/><path class="flow" stroke="var(--c2)" d="M0 50 L40 50"/><path class="flow" stroke="var(--c3)" d="M0 83 C22 83 18 50 40 50"/></svg></div>
+      <div class="node"><h4>Conviction (0–100)</h4><div class="big">40% price + 40% earnings + 20% news</div><small>A theme missing an input is scored on what it has (crypto has no usable earnings, so it is price + news and can't be Strong).</small></div>
+      <div class="arrow">➜</div>
+      <div class="node"><h4>Verdict</h4><div class="verdicts" id="verdicts"><span class="dim">scan to see</span></div><small>Strong ≥ 80 · Positive 65–80 · Neutral 35–65 · Avoid &lt; 35. Click a tier to filter.</small></div>
+    </div>
+    <p class="pipehint" id="pipehint"></p>
+
+    <div id="banner"></div>
     <div id="scanErr"></div>
     <div class="chips" id="filters"></div>
-    <p class="meta" id="scanMeta">Press <b>Scan</b> to rank the themes. The first run downloads prices and can take a minute.</p>
+    <p class="meta" id="scanMeta">Press <b>Scan</b> to rank the themes. The first scan downloads prices and takes a minute or two.</p>
     <div id="scanNote"></div>
     <div class="wrap"><table id="tbl"><thead></thead><tbody></tbody></table></div>
+    <p class="meta" style="margin-top:10px">Click a theme for its tickers, evidence checklist, headlines and valuation. Columns with a colored underline are the three inputs above. <b>Tools</b> (context and validation) never change these scores.</p>
   </section>
 
+  <!-- ================= NEWS ================= -->
   <section class="panel" id="p-news">
-    <div class="row"><b>What is the news saying about each theme?</b><button class="primary" id="newsBtn">Load news dashboard</button><span id="newsStatus" class="dim"></span></div>
-    <p class="meta">Last 14 days of headlines per theme vs the 14 days before (Google News). Tone is a finance word-list score from -1 to +1. Click a row for headlines. "Price and news disagree" is a prompt to look closer, not a validated signal.</p>
+    <div class="row"><b>What is the news saying about each theme?</b><span class="tag ctx">context</span><button class="primary" id="newsBtn">Load news dashboard</button></div>
+    <p class="meta">Last 14 days of headlines per theme vs the 14 days before (Google News); tone runs from -1 to +1. Loading this also refreshes the 30-day tone used in the <b>News input</b> on the Dashboard, and the Dashboard re-scans. "Price and news disagree" is a prompt to look closer, not a validated signal.</p>
     <div id="newsErr"></div><div class="wrap"><table id="newsTbl"></table></div>
     <div id="newsNarr"></div>
     <div id="newsDetail" class="card" style="margin-top:14px;display:none"></div>
   </section>
 
+  <!-- ================= ROTATION ================= -->
   <section class="panel" id="p-rot">
-    <div class="row"><b>Where is money going when AI sells off?</b><button class="primary" id="rotBtn">Run rotation analysis</button><span id="rotStatus" class="dim"></span></div>
-    <p class="meta">Money flows can't be observed directly, so this infers them: which themes beat what their AI exposure explains ("residual strength"), where dollar volume is net buying, and what followed past AI selloffs. Uses cached prices; weekdays only.</p>
+    <div class="row"><b>Where is money going when AI sells off?</b><span class="tag ctx">context</span><button class="primary" id="rotBtn">Run rotation analysis</button></div>
+    <p class="meta">Money flows can't be observed directly, so this infers them: which themes beat what their AI exposure explains ("residual strength"), where dollar volume is net buying, and what followed past AI selloffs. Uses cached prices (weekdays only). It does not change the Dashboard scores.</p>
     <div id="rotErr"></div><div id="rotSummary"></div>
     <h4 class="meta" style="margin-top:16px">Where it is going now</h4><div class="wrap"><table id="rotTbl"></table></div>
     <h4 class="meta" style="margin-top:16px">By asset group</h4><div class="wrap" style="max-width:640px"><table id="rotGrp"></table></div>
@@ -121,54 +197,72 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
     <div id="rotVal"></div>
   </section>
 
-  <section class="panel" id="p-jobs">
+  <!-- ================= TOOLS ================= -->
+  <section class="panel" id="p-tools">
+    <div class="note" style="background:var(--info-bg);color:var(--info)">Nothing on this tab changes the Dashboard scores. The three score inputs (prices, earnings, news tone) are updated from the Dashboard. Each job's live output appears in the bar at the bottom of the page.</div>
+
+    <div class="group"><h3>Context tools <span class="tag ctx">read alongside the score</span></h3><p>Extra evidence for understanding a theme. Most use live data, so none of it is backtested.</p></div>
     <div class="cards">
-      <div class="card"><h3>1 · Download data</h3><p>Earnings history and analyst actions (the earnings half of <b>conviction</b>). News history is slow because of rate limits.</p>
-        <div class="row"><label><input type="checkbox" id="j-news"> include news history</label><label><input type="checkbox" id="j-refresh"> force re-download</label></div>
-        <button class="primary" data-job="altfetch">Download data</button></div>
-      <div class="card"><h3>2 · Live fundamentals</h3><p>Forward P/E, growth, upside to analyst targets and estimate revisions for every theme (takes a few minutes).</p>
+      <div class="card"><h3>Live fundamentals</h3><p>Forward P/E, growth, upside to analyst targets and estimate revisions for every theme (a few minutes). The same numbers appear per theme in the Dashboard's detail panel.</p>
         <button class="primary" data-job="fundamentals">Run fundamentals</button></div>
-      <div class="card"><h3>3 · Headlines</h3><p>Latest news for every currently <b>Leading</b> theme, as a catalyst check.</p>
+      <div class="card"><h3>Headlines for Leading themes</h3><p>Latest news for every theme currently price-Leading, as a catalyst check.</p>
         <div class="row"><label>Stories per theme <input type="number" id="j-n" value="5" min="1" max="15" style="width:64px"></label></div>
         <button class="primary" data-job="headlines">Get headlines</button></div>
-      <div class="card"><h3>4 · Backtest</h3><p>Replays the scanner weekly on history for the selected universe and saves the result for research.</p>
-        <div class="row"><label>From <input type="date" id="j-start" value="2019-06-01"></label><label>Step (bars) <input type="number" id="j-step" value="5" min="1" max="60" style="width:64px"></label></div>
-        <button class="primary" data-job="backtest">Run backtest</button></div>
-      <div class="card"><h3>5 · Research</h3><p>Which signals predicted forward returns, with a train/test split. Needs a backtest result.</p>
-        <div class="row"><label>Result <select id="j-hist"></select></label><label>Validate on <select id="j-val"></select></label></div>
-        <button class="primary" data-job="research">Run research</button></div>
-      <div class="card"><h3>6 · Portfolio backtest</h3><p>Hold the top-N themes by each signal and compare with plain trend / momentum baselines, after costs, with a random-picks test.</p>
-        <div class="row"><label>Result <select id="j-hist2"></select></label><label>Top N <input type="number" id="j-n2" value="5" min="1" max="20" style="width:56px"></label><label>Rebalance (weeks) <input type="number" id="j-every" value="4" min="1" max="26" style="width:56px"></label><label>Cost (bps) <input type="number" id="j-cost" value="10" min="0" max="200" style="width:64px"></label></div>
-        <button class="primary" data-job="portfolio">Run portfolio backtest</button></div>
-      <div class="card"><h3>7 · Mega-theme clusters</h3><p>Finds groups of themes that move together and are strong (the "AI trade" shape), how long each has been hot, a lifecycle timeline, and an AI capex fuel gauge. First run scores 5 years of weeks (a few minutes), then it's cached.</p>
+      <div class="card"><h3>Mega-theme clusters</h3><p>Groups of themes that move together and are strong (the "AI trade" shape), how long each has been hot, and an AI capex fuel gauge. First run scores 5 years of weeks (a few minutes), then it is cached.</p>
         <div class="row"><label>Seed theme <input id="j-seed" value="g:ai_semis" style="width:150px"></label></div>
         <button class="primary" data-job="clusters">Find mega-themes</button></div>
-      <div class="card"><h3>8 · News archive &amp; narratives</h3><p>Download 5 years of monthly headlines per theme (about 45 minutes, resumable; run once), then see which phrases are bursting across themes and how the AI narrative spread.</p>
-        <div class="row"><button class="primary" data-job="newsarchive">Download headline archive</button><button data-job="narratives">Show narratives</button></div></div>
-      <div class="card"><h3>9 · Demand chains &amp; calendar</h3><p>Follow spender capex to supplier revenue and margins (AI build-out) and compare with price; list upcoming earnings for theme stocks. Edit <code>chains.yaml</code> to add chains.</p>
+      <div class="card"><h3>Demand chains &amp; earnings calendar</h3><p>Follow spender capex to supplier revenue and margins (AI build-out) and compare with price; list upcoming earnings for theme stocks. Edit <code>chains.yaml</code> to add chains.</p>
         <div class="row"><label>Days ahead <input type="number" id="j-days" value="21" min="1" max="90" style="width:64px"></label></div>
         <div class="row"><button class="primary" data-job="chains">Run chains</button><button data-job="calendar">Earnings calendar</button></div></div>
-      <div class="card"><h3>10 · Weekly report</h3><p>One run that logs this week's picks, shows what changed since last week, rotation, news flags, chains, next week's earnings, and saves <code>reports/weekly_DATE.md</code>. Run it weekly (add <code>--ntfy TOPIC</code> on the command line for a phone push).</p>
-        <button class="primary" data-job="weekly">Run weekly report</button></div>
-      <div class="card"><h3>11 · Forward test</h3><p>Record today's Strong / Positive / Avoid picks to <code>logs/forward_log.csv</code>, then score them once 21 and 63 trading days have passed. This is the hindsight-free check. Log weekly.</p>
-        <div class="row"><button class="primary" data-job="log">Log today's picks</button><button data-job="scorelog">Score past picks</button></div></div>
+      <div class="card"><h3>Headline archive &amp; narratives</h3><p>Download 5 years of monthly headlines per theme (about 45 minutes, resumable, run once). Powers the News tab's narrative radar and bursting phrases. Not part of the News score input.</p>
+        <div class="row"><button class="primary" data-job="newsarchive">Download headline archive</button><button data-job="narratives">Show narratives</button></div></div>
     </div>
-    <p class="cmd" id="jobCmd">&nbsp;</p>
-    <div class="row"><b id="jobTitle">Console</b><span id="jobState" class="dim"></span><button id="cancelBtn" disabled>Cancel</button><button id="clearBtn">Clear</button></div>
-    <pre id="console">Output from jobs appears here.</pre>
+
+    <div class="group"><h3>Validation &amp; tracking <span class="tag val">check whether the method works</span></h3><p>These test the scoring on history, or record picks so they can be scored later without hindsight.</p></div>
+    <div class="cards">
+      <div class="card"><h3>Backtest</h3><p>Replays the scanner weekly on history for the selected universe and saves the result for Research and Portfolio.</p>
+        <div class="row"><label>From <input type="date" id="j-start" value="2019-06-01"></label><label>Step (bars) <input type="number" id="j-step" value="5" min="1" max="60" style="width:64px"></label></div>
+        <button class="primary" data-job="backtest">Run backtest</button></div>
+      <div class="card"><h3>Research</h3><p>Which signals predicted forward returns, with a train/test split. Needs a backtest result.</p>
+        <div class="row"><label>Result <select id="j-hist"></select></label><label>Validate on <select id="j-val"></select></label></div>
+        <button class="primary" data-job="research">Run research</button></div>
+      <div class="card"><h3>Portfolio backtest</h3><p>Hold the top-N themes by each signal, compare with plain trend / momentum baselines after costs, with a random-picks test.</p>
+        <div class="row"><label>Result <select id="j-hist2"></select></label><label>Top N <input type="number" id="j-n2" value="5" min="1" max="20" style="width:56px"></label><label>Rebalance (weeks) <input type="number" id="j-every" value="4" min="1" max="26" style="width:56px"></label><label>Cost (bps) <input type="number" id="j-cost" value="10" min="0" max="200" style="width:64px"></label></div>
+        <button class="primary" data-job="portfolio">Run portfolio backtest</button></div>
+      <div class="card"><h3>Forward test</h3><p>Record today's Strong / Positive / Avoid picks to <code>logs/forward_log.csv</code>, then score them once 21 and 63 trading days have passed. The hindsight-free check: log weekly.</p>
+        <div class="row"><button class="primary" data-job="log">Log today's picks</button><button data-job="scorelog">Score past picks</button></div></div>
+      <div class="card"><h3>Weekly report</h3><p>One run that logs the picks, shows what changed since last week, rotation, news flags, chains and next week's earnings, and saves <code>reports/weekly_DATE.md</code>. Add <code>--ntfy TOPIC</code> on the command line for a phone push.</p>
+        <button class="primary" data-job="weekly">Run weekly report</button></div>
+    </div>
   </section>
 
+  <!-- ================= HELP ================= -->
   <section class="panel" id="p-help">
-    <div class="card" style="max-width:820px">
-      <h3>How to read this</h3>
-      <p><b>Conviction (0–100)</b> = <b>40% price</b> (rising 200-day trend, relative strength, distance above the 200-day average) + <b>40% earnings</b> (EPS surprise, beat rate, surprise trend) + <b>20% news</b> (mean headline tone over the last 30 days, ranked across themes). Price and earnings were blended 50/50 first because earnings was the strongest signal; news was added at 20% because it improved results in 2024 onward and was neutral before, so it is the weakest-evidence component.</p>
-      <p><span class="badge b-Strong">Strong</span> ≥ 80 · <span class="badge b-Positive">Positive</span> 65–80 · <span class="badge b-Neutral">Neutral</span> 35–65 · <span class="badge b-Avoid">Avoid</span> &lt; 35. In tests the average quarterly return vs other themes rose with each tier on both the global and India universes. Themes without usable earnings (e.g. crypto) are <i>price-only</i> (price and news only) and can't be Strong. The News tab shows tone, catalysts, bursting phrases and the AI-narrative spread; news confirmed the AI trade in tests but did not lead it.</p>
-      <p><b>Evidence checklist</b> (click a theme): every other source is checked but <u>not scored</u>. Tags show how much to trust each: <span class="tag v">validated</span> backtested and used in the score; <span class="tag">live only</span> valuation, estimate revisions, analyst targets and headlines can't be backtested; <span class="tag">tested: no edge</span> macro, analyst upgrades, attention and "not stretched" showed no predictive value, so they are context only.</p>
-      <p><b>How to use it:</b> as a tilt. Avoid the Avoid themes and favour Strong / Positive ones across a diversified set. On a broad rule-based universe a concentrated top-5 rotation did <u>not</u> beat random picks; dropping the weakest themes did help (about +1 to +3% a year). Log picks weekly (Data &amp; jobs, card 11) for a hindsight-free check. It describes what is already working; it does not predict the next bull run. This is a research screen, not investment advice.</p>
-      <p>Click a theme row to see its tickers, live headlines and a valuation snapshot. Everything here runs on your machine: the page talks only to <code>127.0.0.1</code>.</p>
+    <div class="card" style="max-width:860px">
+      <h3>How the page fits together</h3>
+      <p><b>Dashboard</b> is the product: ① prices, ② earnings and ③ news tone are the only things that change a theme's score. Each card shows how complete and how fresh that input is and has an <b>Update</b> button. When an update finishes, the table re-scans and a banner lists the themes whose verdict or conviction moved.</p>
+      <p><b>News</b>, <b>Rotation</b> and <b>Tools &gt; Context tools</b> add evidence you read alongside the score. <b>Tools &gt; Validation</b> tests the method on history or records picks for a hindsight-free forward test. None of those change the Dashboard scores.</p>
+      <h3 style="margin-top:14px">Reading the score</h3>
+      <p><b>Conviction (0–100)</b> = <b>40% price</b> + <b>40% earnings</b> + <b>20% news</b>. Price and earnings were blended 50/50 first because earnings was the strongest signal; news was added at 20% because it improved results in 2024 onward and was neutral before, so it is the weakest-evidence component.</p>
+      <p><span class="badge b-Strong">Strong</span> ≥ 80 · <span class="badge b-Positive">Positive</span> 65–80 · <span class="badge b-Neutral">Neutral</span> 35–65 · <span class="badge b-Avoid">Avoid</span> &lt; 35. In tests, average forward return vs other themes rose with each tier on the global and India universes. Themes without usable earnings (e.g. crypto) are <i>price-only</i> and can't be Strong.</p>
+      <p><b>Evidence checklist</b> (click a theme): every other source is checked but <u>not scored</u>. <span class="tag v">validated</span> = backtested and in the score; <span class="tag">live only</span> = can't be backtested; <span class="tag">tested: no edge</span> = showed no predictive value, so context only.</p>
+      <p><b>How to use it:</b> as a tilt. Avoid the Avoid themes and favour Strong / Positive ones across a diversified set. A concentrated top-5 rotation did <u>not</u> beat random picks on a broad universe; dropping the weakest themes did help (about +1 to +3% a year). Log picks weekly (Tools &gt; Forward test) for a hindsight-free check. It describes what is already working; it does not predict the next bull run. Research screen, not investment advice.</p>
+      <p>Everything runs on your machine; the page talks only to <code>127.0.0.1</code>.</p>
     </div>
   </section>
 </main>
+
+<!-- job bar -->
+<div class="dock" id="dock">
+  <div class="bar2">
+    <span id="dockState" class="dim">No jobs running</span>
+    <span class="last" id="dockLast"></span>
+    <span class="jobs" id="dockJobs"></span>
+    <button id="dockCancel" disabled>Cancel</button>
+    <button id="dockToggle">Show log ▴</button>
+  </div>
+  <div class="log"><div class="cmd" id="dockCmd" style="color:#8aa0bd"></div><pre id="dockPre">Output from jobs appears here.</pre></div>
+</div>
 
 <aside class="drawer" id="drawer">
   <button class="x" id="closeDrawer">Close ✕</button>
@@ -181,41 +275,75 @@ pre{background:var(--code-bg);color:var(--code-ink);padding:12px;border-radius:9
 
 <script>
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-let CFG = {}, ROWS = [], FILTER = 'all', SORT = {k:'conviction', asc:false}, CUR = null, JOB = null, TIMER = null;
+let CFG = {}, ROWS = [], PREV = null, DELTA = {}, CHANGED = new Set(), FILTER = 'all', SORT = {k:'conviction', asc:false}, CUR_THEME = null, STATUS = null;
 
 async function api(path, body){
   const r = await fetch(path, body===undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
-  const j = await r.json(); if(!r.ok) throw new Error(j.error || r.statusText); return j;
+  const j = await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.error || r.statusText); return j;
 }
 const params = () => ({universe:$('#universe').value, asof:$('#asof').value, offline:$('#offline').checked, demo:$('#demo').checked});
 const fmt = (v,d=1,suf='') => v==null ? '<span class="dim">–</span>' : v.toFixed(d)+suf;
 const pct = (v,d=1) => v==null ? '<span class="dim">–</span>' : `<span class="${v>0?'pos':v<0?'neg':''}">${(v*100).toFixed(d)}%</span>`;
 const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ago = h => h==null ? 'never' : h<1 ? 'just now' : h<48 ? Math.round(h)+'h ago' : Math.round(h/24)+' days ago';
 
-// tabs
-$$('.tab').forEach(t => t.onclick = () => { $$('.tab').forEach(x=>x.classList.toggle('on',x===t)); $$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.tab)); });
+/* ---------- toasts + busy buttons ---------- */
+function toast(msg, kind='info', ms=6000){
+  const t = document.createElement('div'); t.className = 'toast '+kind; t.innerHTML = msg; t.onclick = () => t.remove(); $('#toasts').appendChild(t);
+  if(kind!=='err') setTimeout(()=>t.remove(), ms);
+}
+const BUSY = {};   // key -> Set of buttons showing a spinner
+function setBusy(btn, on, text){
+  if(!btn) return;
+  if(on){ if(!btn.dataset.label) btn.dataset.label = btn.innerHTML; btn.innerHTML = `<span class="spin" style="border-color:rgba(255,255,255,.4);border-top-color:#fff"></span> ${text||'Working…'}`; btn.disabled = true; btn.classList.add('busy'); }
+  else { if(btn.dataset.label){ btn.innerHTML = btn.dataset.label; delete btn.dataset.label; } btn.disabled = false; btn.classList.remove('busy'); }
+}
 
-// scan table
+/* ---------- tabs ---------- */
+function showTab(name){ $$('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===name)); $$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+name)); }
+$$('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
+
+/* ---------- pipeline status ---------- */
+async function refreshStatus(){
+  try{ STATUS = await api('/api/status', {universe:$('#universe').value}); renderStatus(); }catch(e){ /* keep the old status */ }
+}
+function renderStatus(){
+  const s = STATUS; if(!s) return; const demo = $('#demo').checked;
+  const p = s.prices, e = s.earnings, n = s.news; const today = Date.now();
+  const stale = d => d && (today - new Date(d).getTime())/86400000 > 4;
+  const set = (id, cls, html) => { $(id).innerHTML = `<span class="dot ${cls}"></span>${html}`; };
+  set('#st-prices', p.have===0 ? 'bad' : (stale(p.last_bar)||p.have<p.need) ? 'warn' : 'ok', p.have===0 ? 'No prices downloaded yet' : `${p.have}/${p.need} tickers · last bar <b>${p.last_bar}</b> · updated ${ago(p.age_h)}`);
+  set('#st-earnings', e.have===0 ? 'bad' : (e.have/e.need<0.8 || e.age_h>24*14) ? 'warn' : 'ok', e.have===0 ? 'No earnings history yet: conviction is price + news only' : `${e.have}/${e.need} stocks · updated ${ago(e.age_h)}`);
+  if(n.need===0) set('#st-news', 'warn', 'Not tracked for this universe (headline queries exist for the global themes only)');
+  else set('#st-news', n.have===0 ? 'bad' : (n.have<n.need || n.age_h>24) ? 'warn' : 'ok', n.have===0 ? 'No news tone yet: conviction excludes news' : `${n.have}/${n.need} themes · updated ${ago(n.age_h)}`);
+  $('#btn-news').disabled = n.need===0 || demo || !!BUSY.newstone; $('#btn-prices').disabled = demo || !!BUSY.prices; $('#btn-earnings').disabled = demo || !!BUSY.earnings;
+  $('#pipehint').textContent = demo ? 'Demo data is on: the scan uses synthetic prices and the Update buttons are disabled.' : '';
+}
+$('#demo').onchange = renderStatus; $('#universe').onchange = () => { refreshStatus(); };
+
+/* ---------- scan table ---------- */
 const COLS = [
-  ['label','Theme','l'],['conviction','Conviction'],['verdict','Verdict','l'],['score','Price'],['earn','Earnings'],['news','News'],['accel','4w chg'],['stage','Stage','l'],
-  ['rs','Rel. strength'],['r3m','3m'],['breadth200','>200d'],['surp','EPS surp %'],['beat','Beats'],['leaders','Leaders','l']
+  ['label','Theme','l'],['conviction','Conviction'],['delta','Δ'],['verdict','Verdict','l'],
+  ['score','Price 40%','i1'],['earn','Earnings 40%','i2'],['news','News 20%','i3'],
+  ['accel','4w chg'],['stage','Stage','l'],['rs','Rel. strength'],['r3m','3m'],['breadth200','>200d'],['surp','EPS surp %'],['beat','Beats'],['leaders','Leaders','l']
 ];
 function renderHead(){
-  const hasF = true;
-  $('#tbl thead').innerHTML = '<tr>' + COLS.filter(c=>hasF||!['surp','beat'].includes(c[0])).map(c=>
-    `<th class="${c[2]||''} ${SORT.k===c[0]?'sorted'+(SORT.asc?' asc':''):''}" data-k="${c[0]}">${c[1]}</th>`).join('') + '</tr>';
-  $$('#tbl th').forEach(th => th.onclick = () => { const k=th.dataset.k; SORT = {k, asc: SORT.k===k ? !SORT.asc : (k==='label'||k==='stage'||k==='leaders'||k==='verdict')}; renderRows(); });
+  const g = '<tr><th class="g" colspan="1"></th><th class="g" colspan="3">Result</th><th class="g g1">Prices</th><th class="g g2">Earnings</th><th class="g g3">News</th><th class="g" colspan="'+(COLS.length-7)+'">Context (not scored)</th></tr>';
+  $('#tbl thead').innerHTML = g + '<tr>' + COLS.map(c=>`<th class="${(c[2]||'')} ${SORT.k===c[0]?'sorted'+(SORT.asc?' asc':''):''}" data-k="${c[0]}">${c[1]}</th>`).join('') + '</tr>';
+  $$('#tbl thead tr:nth-child(2) th').forEach(th => th.onclick = () => { const k=th.dataset.k; SORT = {k, asc: SORT.k===k ? !SORT.asc : (k==='label'||k==='stage'||k==='leaders'||k==='verdict')}; renderRows(); });
 }
 function visible(){
   return ROWS.filter(r => FILTER==='all' ? true : FILTER==='leading' ? r.leading : r.verdict===FILTER)
-    .sort((a,b)=>{ const x=a[SORT.k], y=b[SORT.k]; const c = (x==null)-(y==null) || (typeof x==='string' ? x.localeCompare(y) : x-y); return SORT.asc ? c : -c; });
+    .sort((a,b)=>{ const x=SORT.k==='delta'?(DELTA[a.index]??null):a[SORT.k], y=SORT.k==='delta'?(DELTA[b.index]??null):b[SORT.k]; const c = (x==null)-(y==null) || (typeof x==='string' ? x.localeCompare(y) : x-y); return SORT.asc ? c : -c; });
 }
+function dcell(k){ const d = DELTA[k]; if(d==null || Math.abs(d)<0.5) return '<span class="dim">·</span>'; return `<span class="dl ${d>0?'up':'dn'}">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(0)}</span>`; }
 function renderRows(){
   renderHead();
-  $('#tbl tbody').innerHTML = visible().map(r => `<tr data-k="${esc(r.index)}">
+  $('#tbl tbody').innerHTML = visible().map(r => `<tr data-k="${esc(r.index)}" class="${CHANGED.has(r.index)?'chg':''}">
     <td class="l"><b>${esc(r.label)}</b> <span class="dim">${r.n}</span></td>
     <td><span class="score">${fmt(r.conviction,0)}<i style="width:${Math.round(r.conviction*0.6)}px"></i></span></td>
-    <td class="l"><span class="badge b-${r.verdict}">${r.verdict}</span>${r.earn_covered?'':' <span class="tag" title="No usable earnings data: conviction is price-only">price-only</span>'}</td>
+    <td>${dcell(r.index)}</td>
+    <td class="l"><span class="badge b-${r.verdict}">${r.verdict}</span>${r.earn_covered?'':' <span class="tag" title="No usable earnings data: conviction is price + news only">price-only</span>'}</td>
     <td>${fmt(r.score,0)}</td><td>${r.earn==null?'<span class="dim">–</span>':fmt(r.earn,0)}</td><td>${r.news==null?'<span class="dim">–</span>':(r.news>0?'+':'')+r.news.toFixed(2)}</td>
     <td class="${r.accel>0?'pos':r.accel<0?'neg':''}">${r.accel>0?'+':''}${fmt(r.accel,0)}</td>
     <td class="l"><span class="badge b-${r.stage}">${r.stage}</span></td>
@@ -229,24 +357,102 @@ function renderFilters(){
   const defs = [['all','All'],['Strong','Strong'],['Positive','Positive'],['Neutral','Neutral'],['Avoid','Avoid'],['leading','Price-Leading']];
   $('#filters').innerHTML = defs.map(d=>`<button class="chip ${FILTER===d[0]?'on':''}" data-f="${d[0]}">${d[1]} · ${n(d[0])}</button>`).join('');
   $$('#filters .chip').forEach(b => b.onclick = () => { FILTER=b.dataset.f; renderFilters(); renderRows(); });
+  $('#verdicts').innerHTML = ['Strong','Positive','Neutral','Avoid'].map(v=>`<span class="badge b-${v}" data-v="${v}">${v} ${n(v)}</span>`).join('');
+  $$('#verdicts .badge').forEach(b => b.onclick = () => { FILTER=b.dataset.v; renderFilters(); renderRows(); });
 }
-async function scan(){
-  $('#scanBtn').disabled = true; $('#status').innerHTML = '<span class="spin"></span> scanning…'; $('#scanErr').innerHTML=''; $('#scanNote').innerHTML='';
+function showBanner(reason, prev, now){
+  DELTA = {}; CHANGED = new Set(); const verdictChg = [], moves = [];
+  now.forEach(r => { const p = prev[r.index]; if(!p) return; const d = r.conviction - p.conviction; DELTA[r.index] = d;
+    if(p.verdict !== r.verdict){ verdictChg.push(r, p); CHANGED.add(r.index); } else if(Math.abs(d) >= 3){ moves.push(r); CHANGED.add(r.index); } });
+  const vc = []; for(let i=0;i<verdictChg.length;i+=2){ const r=verdictChg[i], p=verdictChg[i+1]; vc.push(`<span><b>${esc(r.label)}</b> ${p.verdict} → ${r.verdict} (${p.conviction.toFixed(0)}→${r.conviction.toFixed(0)})</span>`); }
+  const mv = moves.sort((a,b)=>Math.abs(DELTA[b.index])-Math.abs(DELTA[a.index])).slice(0,8).map(r=>`<span>${esc(r.label)} ${DELTA[r.index]>0?'▲':'▼'} ${Math.abs(DELTA[r.index]).toFixed(0)}</span>`);
+  if(!vc.length && !mv.length){ $('#banner').innerHTML = ''; toast(`<b>${esc(reason)}</b>: re-scanned, no theme changed verdict or moved 3+ points.`, 'ok'); return; }
+  $('#banner').innerHTML = `<div class="banner"><div class="body"><b>↻ ${esc(reason)}</b>: ${vc.length} verdict change${vc.length===1?'':'s'}, ${moves.length} other theme${moves.length===1?'':'s'} moved 3+ points.${vc.length?'<div class="chgs">'+vc.join('')+'</div>':''}${mv.length?'<div class="chgs">'+mv.join('')+'</div>':''}</div><button class="x2" onclick="document.getElementById(\'banner\').innerHTML=\'\'">✕</button></div>`;
+}
+async function scan(opts={}){
+  const btn = $('#scanBtn'); setBusy(btn, true, 'Scanning…'); $('#scanErr').innerHTML=''; $('#scanNote').innerHTML='';
   try{
-    const d = await api('/api/scan', params()); ROWS = d.rows; CUR = d;
+    const d = await api('/api/scan', params());
+    const prev = PREV, hadRows = ROWS.length>0;
+    PREV = Object.fromEntries(d.rows.map(r=>[r.index, {conviction:r.conviction, verdict:r.verdict}])); ROWS = d.rows;
     $('#scanMeta').textContent = `As of ${d.asof} · benchmark ${d.benchmark} · ${ROWS.length} themes` + (d.missing.length ? ` · no data for ${d.missing.length} tickers (${d.missing.slice(0,8).join(', ')}${d.missing.length>8?'…':''})` : '');
     if(d.note) $('#scanNote').innerHTML = `<div class="note">${esc(d.note)}</div>`;
-    renderFilters(); renderRows(); $('#status').textContent = '';
-  }catch(e){ $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; $('#status').textContent=''; }
-  $('#scanBtn').disabled = false;
+    if(prev && hadRows) showBanner(opts.reason || 'Since the last scan', prev, ROWS); else { DELTA = {}; CHANGED = new Set(); }
+    renderFilters(); renderRows(); refreshStatus();
+  }catch(e){ $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; toast('Scan failed: '+esc(e.message), 'err'); }
+  setBusy(btn, false);
 }
-$('#scanBtn').onclick = scan;
+$('#scanBtn').onclick = () => scan({reason:'Manual scan'});
 
-// drawer
+/* ---------- jobs: spinner on the button, live bar, auto re-scan ---------- */
+const JOBS = {}; let ACTIVE = null; const TIMERS = {};
+const NODE_JOB = {prices:'prices', earnings:'earnings', news:'newstone'};
+const NODE_LABEL = {prices:'Prices & trend', earnings:'Earnings', newstone:'News tone'};
+const SCORE_JOBS = new Set(['prices','earnings','newstone']);
+function jobBody(cmd){
+  const b = {universe:$('#universe').value, offline:$('#offline').checked};
+  if(cmd==='earnings'){ b.refresh = true; }
+  if(cmd==='headlines'){ b.n=+$('#j-n').value; }
+  if(cmd==='backtest'){ b.start=$('#j-start').value; b.step=+$('#j-step').value; }
+  if(cmd==='research'){ b.hist=$('#j-hist').value; b.validate=$('#j-val').value; }
+  if(cmd==='calendar'){ b.days=+$('#j-days').value; }
+  if(cmd==='clusters'){ b.seed=$('#j-seed').value.trim(); }
+  if(cmd==='portfolio'){ b.hist=$('#j-hist2').value; b.n=+$('#j-n2').value; b.every=+$('#j-every').value; b.cost=+$('#j-cost').value; }
+  return b;
+}
+function jobButtons(cmd){ return [...$$(`[data-job="${cmd}"]`), ...Object.entries(NODE_JOB).filter(([,c])=>c===cmd).map(([n])=>$('#btn-'+n))]; }
+async function startJob(cmd, label, btn){
+  if(BUSY[cmd]) { showDock(true); return; }
+  let j; try{ j = await api('/api/run/'+cmd, jobBody(cmd)); }
+  catch(e){ toast(`<b>${esc(label)}</b> could not start: ${esc(e.message)}`, 'err'); return; }
+  const job = JOBS[j.id] = {id:j.id, cmd, label, next:0, lines:[], done:false, code:null, command:j.command, elapsed:0};
+  BUSY[cmd] = true; jobButtons(cmd).forEach(b=>setBusy(b, true, 'Running…')); ACTIVE = j.id;
+  // score inputs keep the log collapsed (the card shows progress); tools open it so the result is visible
+  showDock(!SCORE_JOBS.has(cmd)); renderDock(); poll(j.id);
+}
+async function poll(id){
+  clearTimeout(TIMERS[id]); const job = JOBS[id]; if(!job) return;
+  try{
+    const s = await api(`/api/job/${id}?since=${job.next}`); job.next = s.next; job.elapsed = s.elapsed; job.lines.push(...s.lines);
+    if(s.done){ job.done = true; job.code = s.code; finishJob(job); }
+  }catch(e){ job.done = true; job.code = -1; job.lines.push('! '+e.message); finishJob(job); }
+  renderDock(); if(!job.done) TIMERS[id] = setTimeout(()=>poll(id), 1000);
+}
+async function finishJob(job){
+  delete BUSY[job.cmd]; jobButtons(job.cmd).forEach(b=>setBusy(b,false)); renderStatus();
+  if(job.code===0){
+    toast(`✓ <b>${esc(job.label)}</b> finished in ${job.elapsed}s`, 'ok');
+    if(SCORE_JOBS.has(job.cmd)){ await refreshStatus(); await scan({reason: `${NODE_LABEL[job.cmd]} updated`}); }
+    else { refreshConfig(); refreshStatus(); }
+  } else { toast(`✗ <b>${esc(job.label)}</b> failed (exit ${job.code}). Open the log for details.`, 'err'); showDock(true); }
+}
+function showDock(open){ $('#dock').classList.toggle('open', open); $('#dockToggle').textContent = open ? 'Hide log ▾' : 'Show log ▴'; }
+function renderDock(){
+  const all = Object.values(JOBS), running = all.filter(j=>!j.done), job = JOBS[ACTIVE];
+  $('#jobsChip').style.display = running.length ? 'inline-block' : 'none'; $('#jobsChip').innerHTML = `<span class="spin" style="border-color:rgba(255,255,255,.4);border-top-color:#fff"></span> ${running.length} job${running.length===1?'':'s'} running`;
+  if(!job){ return; }
+  const nb = Object.entries(NODE_JOB).find(([,c])=>c===job.cmd);
+  $('#dockState').innerHTML = job.done ? (job.code===0 ? `<span style="color:#58d68d">✓ ${esc(job.label)} finished (${job.elapsed}s)</span>` : `<span style="color:#ff8a80">✗ ${esc(job.label)} failed (${job.elapsed}s)</span>`) : `<span class="spin"></span> <b>${esc(job.label)}</b> running ${job.elapsed}s`;
+  const last = [...job.lines].reverse().find(l=>l.trim()) || (job.done ? '' : 'starting…'); $('#dockLast').textContent = last;
+  $('#dockCmd').textContent = '$ '+job.command; const pre = $('#dockPre'), atEnd = pre.scrollTop+pre.clientHeight >= pre.scrollHeight-30;
+  pre.textContent = job.lines.join('\n') || (job.done ? '(no output)' : 'waiting for output…'); if(atEnd) pre.scrollTop = pre.scrollHeight;
+  $('#dockCancel').disabled = job.done;
+  $('#dockJobs').innerHTML = all.slice(-4).map(j=>`<span class="jp ${j.id===ACTIVE?'on':''}" data-id="${j.id}">${j.done?(j.code===0?'✓':'✗'):'⟳'} ${esc(j.label)}</span>`).join('');
+  $$('#dockJobs .jp').forEach(p => p.onclick = () => { ACTIVE = p.dataset.id; renderDock(); });
+  // live text on the buttons of a running job
+  if(!job.done) jobButtons(job.cmd).forEach(b => { if(b.classList.contains('busy')) b.innerHTML = `<span class="spin" style="border-color:rgba(255,255,255,.4);border-top-color:#fff"></span> ${b.dataset.node ? 'Updating ' : 'Running '}${job.elapsed}s`; });
+}
+$('#dockToggle').onclick = () => showDock(!$('#dock').classList.contains('open'));
+$('#jobsChip').onclick = () => showDock(true);
+$('#dockCancel').onclick = async () => { const j = JOBS[ACTIVE]; if(j && !j.done){ try{ await api(`/api/job/${j.id}/cancel`, {}); toast('Cancel requested', 'info'); }catch(e){ toast(esc(e.message), 'err'); } } };
+$$('[data-node]').forEach(b => b.onclick = () => startJob(NODE_JOB[b.dataset.node], 'Update '+{prices:'prices',earnings:'earnings',news:'news tone'}[b.dataset.node], b));
+$$('[data-job]').forEach(b => b.onclick = () => startJob(b.dataset.job, b.closest('.card').querySelector('h3').textContent.trim(), b));
+
+/* ---------- drawer ---------- */
 async function openDetail(k){
   const row = ROWS.find(r=>r.index===k); CUR_THEME = k;
   $('#dTitle').innerHTML = `${esc(row.label)} <span class="badge b-${row.verdict}">${row.verdict}</span> <span class="badge b-${row.stage}">${row.stage}</span>`;
-  $('#dMeta').textContent = `Conviction ${row.conviction.toFixed(0)} = price ${row.score.toFixed(0)} + earnings ${row.earn==null?'n/a':row.earn.toFixed(0)} + news ${row.news==null?'n/a':(row.news>0?'+':'')+row.news.toFixed(2)} · 4-week change ${row.accel>0?'+':''}${row.accel.toFixed(0)}`;
+  $('#dMeta').textContent = `Conviction ${row.conviction.toFixed(0)} = price ${row.score.toFixed(0)} (40%) + earnings ${row.earn==null?'n/a':row.earn.toFixed(0)} (40%) + news ${row.news==null?'n/a':(row.news>0?'+':'')+row.news.toFixed(2)} (20%) · 4-week change ${row.accel>0?'+':''}${row.accel.toFixed(0)}`;
   $('#dHl').textContent='Not loaded.'; $('#dFu').textContent='Not loaded.'; $('#drawer').classList.add('on'); runVerify(k);
   $('#dTbl tbody').innerHTML = '<tr><td class="dim">loading…</td></tr>';
   try{
@@ -255,13 +461,11 @@ async function openDetail(k){
     $('#dTbl tbody').innerHTML = d.rows.map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.index)}</b></td><td class="l dim">${r.kind}</td><td>${pct(r.r1m,0)}</td><td>${pct(r.r3m,0)}</td><td>${pct(r.r6m,0)}</td><td>${pct(r.rs)}</td><td>${pct(r.d200,0)}</td><td>${pct(r.near_high,0)}</td><td>${fmt(r.volr,2)}</td><td>${fmt(r.rsi,0)}</td></tr>`).join('');
   }catch(e){ $('#dTbl tbody').innerHTML = `<tr><td class="neg">${esc(e.message)}</td></tr>`; }
 }
-let CUR_THEME = null;
 async function runVerify(k){
   $('#dVf').innerHTML = '<span class="spin"></span> gathering live evidence (valuation, revisions, headlines, macro)…';
   try{
     const d = await api('/api/verify', {...params(), theme:k}); if(k!==CUR_THEME) return;
-    const ic = {pass:'✓',fail:'✗',na:'–'};
-    const tagc = t => (t==='validated' || t.startsWith('weak')) ? 'tag v' : 'tag';
+    const ic = {pass:'✓',fail:'✗',na:'–'}; const tagc = t => (t==='validated' || t.startsWith('weak')) ? 'tag v' : 'tag';
     const sm = Object.entries(d.summary).map(([t,v])=>`<span class="${tagc(t)}">${t}: ${v.passed}/${v.total}</span>`).join(' ');
     $('#dVf').innerHTML = `<p class="meta">${sm}</p>` + d.checks.map(c=>`<div class="ck"><b class="st-${c.status}">${ic[c.status]} ${c.status.toUpperCase()}</b><span>${esc(c.name)} <span class="${tagc(c.tier)}">${esc(c.tier)}</span></span><small>${esc(c.detail)}</small></div>`).join('');
   }catch(e){ $('#dVf').innerHTML = `<span class="neg">${esc(e.message)}</span>`; }
@@ -272,7 +476,7 @@ $('#vfBtn').onclick = () => runVerify(CUR_THEME);
 $('#hlBtn').onclick = async () => {
   $('#dHl').innerHTML = '<span class="spin"></span>';
   try{ const d = await api('/api/headlines', {...params(), theme:CUR_THEME, n:8});
-    $('#dHl').innerHTML = `<p class="meta">${d.total} stories in the last 14 days. Context only; not backtestable.</p><ul class="hl">` + d.items.map(i=>`<li>${esc(i.title)}<br><small>${esc(i.date)}</small></li>`).join('') + '</ul>';
+    $('#dHl').innerHTML = `<p class="meta">${d.total} stories in the last 14 days. Context only; not backtested.</p><ul class="hl">` + d.items.map(i=>`<li>${esc(i.title)}<br><small>${esc(i.date)}</small></li>`).join('') + '</ul>';
   }catch(e){ $('#dHl').innerHTML = `<span class="neg">${esc(e.message)}</span>`; }
 };
 $('#fuBtn').onclick = async () => {
@@ -283,7 +487,7 @@ $('#fuBtn').onclick = async () => {
   }catch(e){ $('#dFu').innerHTML = `<span class="neg">${esc(e.message)}</span>`; }
 };
 
-// news
+/* ---------- news tab ---------- */
 let NEWS = null;
 const tcol = v => v==null ? '–' : `<span class="${v>0.05?'pos':v<-0.05?'neg':''}">${v>0?'+':''}${v.toFixed(2)}</span>`;
 function drawNews(){
@@ -292,25 +496,26 @@ function drawNews(){
   $$('#newsTbl tbody tr').forEach(tr => tr.onclick = () => { const r = NEWS.rows.find(x=>x.index===tr.dataset.k); const d=$('#newsDetail'); d.style.display='block';
     d.innerHTML = `<h3>${esc(r.label)} · headlines</h3><ul class="hl">` + r.headlines.map(h=>`<li>${esc(h.title)}<br><small>${esc(h.date)} · tone ${h.tone>0?'+':''}${h.tone.toFixed(2)}${h.catalysts&&h.catalysts.length?' · '+esc(h.catalysts.join(', ')):''} · ${esc(h.source||'')}</small></li>`).join('') + '</ul>'; d.scrollIntoView({behavior:'smooth'}); });
   const n = NEWS.narratives;
-  $('#newsNarr').innerHTML = !n ? '<div class="note" style="margin-top:14px">No headline archive yet: run <code>python -m themescan newsarchive</code> (about 45 min, resumable) to enable narrative radar and bursting phrases.</div>' :
+  $('#newsNarr').innerHTML = !n ? '<div class="note" style="margin-top:14px">No headline archive yet: Tools &gt; Headline archive (about 45 min, resumable) enables the narrative radar and bursting phrases.</div>' :
    `<div class="card" style="margin-top:14px"><h3>Narrative radar · ${esc(n.month)}</h3><p>Phrases whose frequency jumped vs the prior 6 months and that appear in at least 3 different themes (archive: ${n.archive.headlines.toLocaleString()} headlines, ${n.archive.first} → ${n.archive.last}).</p><p>${n.bursts.length ? n.bursts.slice(0,15).map(b=>`<span class="tag">${esc(b.term)} ×${b.lift.toFixed(1)} · ${b.themes} themes</span>`).join(' ') : '<span class="dim">none</span>'}</p>
    <h3 style="margin-top:12px">"AI" narrative spread across themes</h3><p>Share of all headlines mentioning AI terms, and in how many themes it exceeds 15%.</p><div class="wrap"><table><thead><tr><th class="l">Month</th><th>Share of headlines</th><th>Themes over 15%</th></tr></thead><tbody>${n.ai_spread.map(s=>`<tr style="cursor:default"><td class="l">${s.month}</td><td>${(s.share*100).toFixed(1)}%</td><td>${s.themes_over} / ${s.themes}</td></tr>`).join('')}</tbody></table></div></div>`;
 }
 $('#newsBtn').onclick = async () => {
-  $('#newsBtn').disabled = true; $('#newsStatus').innerHTML = '<span class="spin"></span> reading headlines for every theme (about a minute)…'; $('#newsErr').innerHTML='';
-  try{ NEWS = await api('/api/news', {universe:'themes.yaml', offline:$('#offline').checked}); drawNews(); $('#newsStatus').textContent = 'as of '+NEWS.asof; }
-  catch(e){ $('#newsErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; $('#newsStatus').textContent=''; }
-  $('#newsBtn').disabled = false;
+  const b = $('#newsBtn'); setBusy(b, true, 'Reading headlines (about a minute)…'); $('#newsErr').innerHTML='';
+  try{ NEWS = await api('/api/news', {universe:'themes.yaml', offline:$('#offline').checked}); drawNews(); await refreshStatus();
+       if($('#universe').value==='themes.yaml') scan({reason:'News tone refreshed'}); }
+  catch(e){ $('#newsErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; toast('News failed: '+esc(e.message), 'err'); }
+  setBusy(b, false);
 };
 
-// rotation
+/* ---------- rotation tab ---------- */
 const rpct = (v,d=1) => v==null ? '<span class="dim">–</span>' : `<span class="${v>0?'pos':v<0?'neg':''}">${(v*100).toFixed(d)}%</span>`;
 function rotRows(rows, n){
   return '<thead><tr><th class="l">Theme</th><th class="l">Group</th><th>20d ret</th><th>Residual</th><th>Net buying</th><th>AI beta</th><th>Past edge (60d)</th><th>Past hit</th><th>Signals</th></tr></thead><tbody>' +
    rows.slice(0,n).map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.label)}</b></td><td class="l dim">${esc(r.group)}</td><td>${rpct(r.ret)}</td><td>${rpct(r.resid)}</td><td class="${r.flow>0?'pos':'neg'}">${r.flow==null?'–':r.flow.toFixed(2)}</td><td>${r.beta==null?'–':r.beta.toFixed(2)}</td><td>${rpct(r.hist_edge)}</td><td>${r.hist_hit==null?'–':Math.round(r.hist_hit*100)+'%'}</td><td><b>${r.signals}</b>/3</td></tr>`).join('') + '</tbody>';
 }
 $('#rotBtn').onclick = async () => {
-  $('#rotBtn').disabled = true; $('#rotStatus').innerHTML = '<span class="spin"></span> analysing (20-40s)…'; $('#rotErr').innerHTML='';
+  const b = $('#rotBtn'); setBusy(b, true, 'Analysing (20-40s)…'); $('#rotErr').innerHTML='';
   try{
     const d = await api('/api/rotation', {offline: $('#offline').checked}); const i = d.info;
     $('#rotSummary').innerHTML = `<div class="note" style="background:var(--info-bg);color:var(--info)">As of ${d.asof}: the AI complex is <b>${(i.source_return*100).toFixed(1)}%</b> over ${i.window} trading days (${(i.source_excess*100).toFixed(1)}% vs world) and <b>${(i.drawdown*100).toFixed(1)}%</b> below its high of ${i.high_date}.</div>`;
@@ -318,41 +523,11 @@ $('#rotBtn').onclick = async () => {
     $('#rotGrp').innerHTML = '<thead><tr><th class="l">Group</th><th>Themes</th><th>Avg residual</th><th>Avg 20d ret</th><th>% beating AI-beta</th></tr></thead><tbody>' + d.groups.map(g=>`<tr style="cursor:default"><td class="l">${esc(g.index)}</td><td>${g.n}</td><td>${rpct(g.mean_resid)}</td><td>${rpct(g.mean_ret)}</td><td>${Math.round(g.pct_positive_resid*100)}%</td></tr>`).join('') + '</tbody>';
     $('#rotCross').innerHTML = rotRows(d.cross.sort((a,b)=>b.resid-a.resid), 20);
     const v=i.validation; $('#rotVal').innerHTML = `<div class="card" style="margin-top:16px"><h3>Can this predict where money goes next?</h3><p>Tested on ${i.episodes.length} past AI selloffs since 2018 (${esc(i.episodes.join(', '))}).</p><p>${[20,60].map(h=>`<b>${h} days ahead:</b> residual-strength correlation ${v[h].resid_ic.toFixed(3)} (positive in ${v[h].resid_pos}/${v[h].n} episodes); net-buying ${v[h].flow_ic.toFixed(3)} (${v[h].flow_pos}/${v[h].n})`).join('<br>')}</p><p>Values near 0 with about half the episodes positive mean today's rotation winners did <u>not</u> reliably keep winning. This shows where money is going <i>now</i>; it does not show it will continue.</p></div>`;
-    $('#rotStatus').textContent='';
-  }catch(e){ $('#rotErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; $('#rotStatus').textContent=''; }
-  $('#rotBtn').disabled = false;
+  }catch(e){ $('#rotErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; toast('Rotation failed: '+esc(e.message), 'err'); }
+  setBusy(b, false);
 };
 
-// jobs
-function jobBody(cmd){
-  const b = {universe:$('#universe').value, offline:$('#offline').checked};
-  if(cmd==='altfetch'){ b.news=$('#j-news').checked; b.refresh=$('#j-refresh').checked; }
-  if(cmd==='headlines'){ b.n=+$('#j-n').value; }
-  if(cmd==='backtest'){ b.start=$('#j-start').value; b.step=+$('#j-step').value; }
-  if(cmd==='research'){ b.hist=$('#j-hist').value; b.validate=$('#j-val').value; }
-  if(cmd==='calendar'){ b.days=+$('#j-days').value; }
-  if(cmd==='clusters'){ b.seed=$('#j-seed').value.trim(); }
-  if(cmd==='portfolio'){ b.hist=$('#j-hist2').value; b.n=+$('#j-n2').value; b.every=+$('#j-every').value; b.cost=+$('#j-cost').value; }
-  return b;
-}
-$$('[data-job]').forEach(btn => btn.onclick = async () => {
-  const cmd = btn.dataset.job; $('#console').textContent=''; $('#jobTitle').textContent = btn.closest('.card').querySelector('h3').textContent;
-  try{ const j = await api('/api/run/'+cmd, jobBody(cmd)); JOB = {id:j.id, next:0}; $('#jobCmd').textContent = '$ '+j.command; $('#cancelBtn').disabled=false; poll(); }
-  catch(e){ $('#console').textContent = e.message; }
-});
-async function poll(){
-  clearTimeout(TIMER); if(!JOB) return;
-  try{
-    const s = await api(`/api/job/${JOB.id}?since=${JOB.next}`); JOB.next = s.next;
-    if(s.lines.length){ const c=$('#console'), atEnd = c.scrollTop+c.clientHeight >= c.scrollHeight-30; c.textContent += s.lines.join('\n')+'\n'; if(atEnd) c.scrollTop=c.scrollHeight; }
-    $('#jobState').innerHTML = s.done ? (s.code===0 ? '✓ finished' : '✗ exited with code '+s.code)+` (${s.elapsed}s)` : `<span class="spin"></span> running ${s.elapsed}s`;
-    if(s.done){ $('#cancelBtn').disabled=true; JOB=null; refreshConfig(); return; }
-  }catch(e){ $('#jobState').textContent = e.message; JOB=null; return; }
-  TIMER = setTimeout(poll, 1000);
-}
-$('#cancelBtn').onclick = async () => { if(JOB) await api(`/api/job/${JOB.id}/cancel`, {}); };
-$('#clearBtn').onclick = () => { $('#console').textContent=''; $('#jobCmd').innerHTML='&nbsp;'; $('#jobState').textContent=''; };
-
+/* ---------- config + boot ---------- */
 async function refreshConfig(){
   CFG = await api('/api/config');
   const u = $('#universe'), cur = u.value;
@@ -361,7 +536,7 @@ async function refreshConfig(){
   $('#j-hist').innerHTML = opts || '<option value="">(run a backtest first)</option>'; $('#j-hist2').innerHTML = opts || '<option value="">(run a backtest first)</option>';
   $('#j-val').innerHTML = '<option value="">(none)</option>' + opts;
 }
-refreshConfig().catch(e => $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`);
+refreshConfig().then(refreshStatus).catch(e => { $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; });
 </script>
 </body>
 </html>

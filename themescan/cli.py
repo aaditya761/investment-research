@@ -131,14 +131,12 @@ def cmd_altfetch(args):
     if not args.skip_news:
         n = altdata.fetch_news({k: v for k, v in q.items() if k in cfg.themes}, refresh=args.refresh)
         print(f"news: {len(n)} themes")
-    if args.skip_analyst:
-        return
     stocks = sorted({t for th in cfg.themes.values() for t in th.stocks if not t.startswith("^") and "-USD" not in t})
     e = altdata.fetch_earnings(stocks, refresh=args.refresh)
-    print(f"earnings: {e.ticker.nunique()} tickers, {len(e)} reports")
-    a = altdata.fetch_analyst_actions(stocks, refresh=args.refresh)
-    print(f"analyst: {a.ticker.nunique()} tickers, {len(a)} actions")
-
+    print(f"earnings: {e.ticker.nunique()} of {len(stocks)} stocks, {len(e)} reports", flush=True)
+    if not args.skip_analyst:
+        a = altdata.fetch_analyst_actions(stocks, refresh=args.refresh)
+        print(f"analyst: {a.ticker.nunique()} tickers, {len(a)} actions")
 
 def cmd_headlines(args):
     import yaml
@@ -504,6 +502,19 @@ def cmd_weekly(args):
         print(f"push to ntfy topic '{topic}': {'sent' if ok else 'failed'}")
 
 
+def cmd_newstone(args):
+    import yaml
+
+    from . import news as nw
+
+    cfg = load_config(args.themes)
+    q = yaml.safe_load(open(args.queries))
+    keys = [k for k in cfg.themes if k in q]
+    print(f"refreshing 30-day headline tone for {len(keys)} themes (about 1 request per theme)...", flush=True)
+    t = nw.refresh_tone30(q, keys, fetch=True, max_age_hours=0, log=lambda k: print(f"  {k}", flush=True))
+    print(f"done: tone available for {int(t.notna().sum())} of {len(keys)} themes")
+
+
 def main(argv=None):
     warnings.filterwarnings("ignore")
     p = argparse.ArgumentParser(prog="themescan")
@@ -541,6 +552,9 @@ def main(argv=None):
     ro_.add_argument("--drop", type=float, default=10.0, help="selloff threshold in percent below the 60-day high, for the historical study")
     ro_.add_argument("--top", type=int, default=20)
     ro_.set_defaults(fn=cmd_rotation)
+    nt = sub.add_parser("newstone", help="refresh the 30-day headline tone that feeds conviction")
+    nt.add_argument("--queries", default="news_queries.yaml")
+    nt.set_defaults(fn=cmd_newstone)
     nw_ = sub.add_parser("news", help="live news dashboard: tone, tone change, catalysts, bursting terms per theme")
     nw_.add_argument("--theme", nargs="*")
     nw_.add_argument("--detail", nargs="*", help="theme keys whose headlines to print")

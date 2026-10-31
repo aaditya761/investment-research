@@ -7,10 +7,10 @@ prepping for a bull run. Each theme is a basket of ETF proxies plus individual s
 
     python -m themescan ui            # opens http://127.0.0.1:8765 (add --port N to change, --no-browser to skip opening)
 
-Scan tab: pick a universe (global / India), tick *Cached prices only* for instant reruns, press **Scan**. Click any column to sort,
-use the filter pills (Leading / Confirmed / Improving / Lagging), and click a theme for its tickers, live headlines and a valuation
-snapshot. *Data & jobs* tab has a button for each long-running command (download data, fundamentals, headlines, backtest, research)
-with a live console. It runs on your machine only (bound to 127.0.0.1, no extra dependencies).
+**Dashboard** is the product. A pipeline at the top shows the three inputs that change a theme's score (① prices 40%, ② earnings 40%, ③ news tone 20%) feeding Conviction, then the Verdict. Each input card shows how complete and
+how fresh its data is and has an **Update** button with a spinner; when the update finishes the table re-scans automatically and a banner plus a Δ column show which themes changed. Click any theme for its tickers, evidence
+checklist, headlines and valuation. **News** and **Rotation** tabs and **Tools** (context tools, validation and tracking jobs) never change the scores. A bar at the bottom of the page shows every running job with live output.
+It runs on your machine only (bound to 127.0.0.1, no extra dependencies).
 
 ## Quickstart (local)
 
@@ -22,11 +22,11 @@ Needs Python 3.10+ (3.11+ recommended) and internet access (Yahoo Finance, Googl
     pip install -r requirements.txt
     python -m themescan ui                                    # opens http://127.0.0.1:8765
 
-Run everything from the repo root (config files and the `data/` cache use relative paths). First time in the UI:
-1. **Scan** (downloads prices, about 1-2 minutes, then cached).
-2. **Data & jobs > Download data** (earnings history; needed for the earnings half of conviction), then **Scan** again.
-3. Optional: **Download headline archive** (about 45 minutes, resumable) to enable the News tab's narrative radar.
-4. Every week: **Weekly report** (or `python -m themescan weekly`), then commit `logs/forward_log.csv`.
+Run everything from the repo root (config files and the `data/` cache use relative paths). First time in the UI (Dashboard):
+1. Press **Scan** (downloads prices, about 1-2 minutes, then cached).
+2. Press **Update** on the **Earnings** card, then on the **News tone** card. Each finishes with an automatic re-scan and a banner listing what changed.
+3. Optional (Tools tab): **Download headline archive** (about 45 minutes, resumable) to enable the News tab's narrative radar.
+4. Every week: Tools > **Weekly report** (or `python -m themescan weekly`), then commit `logs/forward_log.csv`.
 
 Schedule the weekly run (Mac/Linux cron, Fridays after the US close, adjust the path):
 
@@ -88,7 +88,7 @@ failed out of sample on India), then 20% weight goes to the 30-day news-tone ran
     python -m themescan chains                        # spender capex -> supplier revenue / gross margin -> price, for chains in chains.yaml (AI build-out included)
     python -m themescan calendar --days 21            # upcoming earnings for theme stocks; spenders and suppliers of tracked chains flagged
     python -m themescan weekly [--ntfy TOPIC]         # logs picks, shows what changed since last week, rotation, news flags, chains, next-7-day earnings -> reports/weekly_DATE.md
-    (UI: Data & jobs cards 9-10; the evidence checklist gained a theme-specific macro-driver line)
+    (UI: Tools tab; the evidence checklist gained a theme-specific macro-driver line)
 
 - **Chains** (live Yahoo statements, ~5 quarters, so not backtestable): for the AI chain the tracker shows hyperscaler capex +101% YoY / +12% QoQ, suppliers' revenue (semis +68%, memory +61%, cyber +26%, power +22% YoY) and margins, and flags
   disagreements with price (e.g. power: deliveries growing but price score 35). A capex *cut* by the spenders would be the real warning. Edit `chains.yaml` to track other chains.
@@ -103,7 +103,7 @@ failed out of sample on India), then 20% weight goes to the 30-day news-tone ran
     python -m themescan news                         # live: tone, tone change, catalysts, bursting phrases per theme; flags where price and news disagree (--detail THEME for headlines)
     python -m themescan newsarchive                  # one-off, ~45 min, resumable: monthly headline history per theme since 2021 (Google News date-bounded queries)
     python -m themescan narratives                   # phrases bursting across themes this month + how the AI narrative spread over time
-    (UI: News tab; Data & jobs cards 8)
+    (UI: News tab; Tools > Headline archive)
 
 Source is Google News RSS (free). Historical headlines are point-in-time and sampled (about 100 per theme-month; story *counts* are unreliable, so only text is used). Tone is a finance word list
 with negation handling and catalyst tags (earnings, capex/demand, supply/pricing, policy, macro, analyst action, deals, geopolitics). An optional Claude classifier exists (`news.classify_llm`, needs
@@ -119,7 +119,7 @@ What the tests (31 themes, 2021-2026, monthly, 126-bar forward alpha) showed:
 
 ## Mega-themes: recognising "the AI trade" while it forms
 
-    python -m themescan clusters                      # (UI: Data & jobs > Mega-theme clusters); first run scores 5 years of weeks, then cached
+    python -m themescan clusters                      # (UI: Tools > Mega-theme clusters); first run scores 5 years of weeks, then cached
     python -m themescan clusters --seed g:crypto      # lifecycle of another theme's cluster
 
 Clusters themes by 52-week return correlation (themes that are really one trade end up together), flags a cluster **HOT** when it has >= 3 members, average price score >= 65 and

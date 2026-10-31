@@ -119,6 +119,49 @@ def api_verify(p):
     return dict(theme=k, checks=checks, summary=verify.summarize(checks), conviction=_clean(df.loc[k].conviction), verdict=df.loc[k].verdict)
 
 
+def api_status(p):
+    """What data is on disk for the selected universe, how complete and how old: drives the pipeline cards."""
+    import json as _json
+
+    u = _universe(p.get("universe", "themes.yaml"))
+    cfg = load_config(ROOT / u)
+    now = time.time()
+
+    def age(paths):
+        m = [x.stat().st_mtime for x in paths]
+        return round((now - max(m)) / 3600, 1) if m else None
+
+    cache = ROOT / "data/cache"
+    files = [cache / f"{t.replace('^', '_')}.csv" for t in cfg.all_tickers]
+    have = [f for f in files if f.exists()]
+    bench = cache / f"{cfg.benchmark.replace('^', '_')}.csv"
+    last_bar = str(pd.read_csv(bench, usecols=[0]).iloc[-1, 0])[:10] if bench.exists() else None
+    prices = dict(last_bar=last_bar, have=len(have), need=len(files), age_h=age(have))
+    stocks = _stocks(cfg)
+    ef = [ROOT / "data/alt/earnings" / f"{t.replace('^', '_')}.csv" for t in stocks]
+    eh = [f for f in ef if f.exists() and f.stat().st_size > 5]
+    earnings = dict(have=len(eh), need=len(stocks), age_h=age(eh))
+    qf = ROOT / "news_queries.yaml"
+    q = yaml.safe_load(qf.read_text()) if qf.exists() else {}
+    keys = [k for k in cfg.themes if k in q]
+    nf = ROOT / "data/news_live.json"
+    news = dict(have=0, need=len(keys), age_h=None)
+    if nf.exists() and keys:
+        d = _json.loads(nf.read_text())
+        ok = [k for k in keys if d.get(k, {}).get("tone") is not None]
+        news = dict(have=len(ok), need=len(keys), age_h=round((now - min(d[k]["t"] for k in ok)) / 3600, 1) if ok else None)
+    arch = ROOT / "data/news_hist"
+    af = [f for f in arch.glob("*.csv")] if arch.exists() else []
+    fl = ROOT / "logs/forward_log.csv"
+    snaps, last_log = 0, None
+    if fl.exists():
+        lg = pd.read_csv(fl)
+        snaps, last_log = int(lg.groupby(["universe", "asof"]).ngroups), str(lg["asof"].max())
+    return dict(universe=u, prices=prices, earnings=earnings, news=news,
+                extras=dict(archive_themes=len(af), fred=len(list((ROOT / "data/fred").glob("*.csv"))) if (ROOT / "data/fred").exists() else 0,
+                            forward_snapshots=snaps, forward_last=last_log, backtests=len(hist_files())))
+
+
 _ROT: dict = {}
 _NEWS: dict = {}
 AI_RX = r"\b(ai|a\.i\.|artificial intelligence|generative|chatgpt|openai|llm|data cent(er|re)s?|hbm|gpu)\b"
@@ -242,6 +285,12 @@ def build_argv(cmd: str, p: dict) -> list[str]:
         if h not in hist_files() or (v and v not in hist_files()):
             raise ValueError("pick a backtest result from the list (run a backtest first)")
         return ["research", f"data/{h}"] + (["--validate", f"data/{v}"] if v else [])
+    if cmd == "prices":
+        return glob + ["--refresh", "scan", "--no-news", "--no-fundamentals"]
+    if cmd == "earnings":
+        return glob + ["altfetch", "--skip-news", "--skip-analyst"] + (["--refresh"] if p.get("refresh") else [])
+    if cmd == "newstone":
+        return ["newstone"]
     if cmd == "chains":
         return glob + (["--offline"] if p.get("offline") else []) + ["chains"]
     if cmd == "calendar":
@@ -286,10 +335,7 @@ def start_job(cmd: str, p: dict) -> dict:
         _JOBS[jid] = job
 
     def run():
-        env = {"PYTHONUNBUFFERED": "1", "PATH": __import__("os").environ.get("PATH", ""), "HOME": __import__("os").environ.get("HOME", "")}
-        for k in ("HTTPS_PROXY", "HTTP_PROXY", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "NO_PROXY"):
-            if k in __import__("os").environ:
-                env[k] = __import__("os").environ[k]
+        env = dict(__import__("os").environ, PYTHONUNBUFFERED="1")
         proc = subprocess.Popen([sys.executable, "-m", "themescan", *argv], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=env)
         job["proc"] = proc
         for line in proc.stdout:
@@ -298,6 +344,7 @@ def start_job(cmd: str, p: dict) -> dict:
             job["lines"].append(line.rstrip("\n"))
         job["code"] = proc.wait()
         job["done"] = True
+        _PANELS.clear(); _NEWS.clear(); _ROT.clear()  # data on disk changed: next scan must re-read it
 
     threading.Thread(target=run, daemon=True).start()
     return dict(id=jid, command="python -m themescan " + " ".join(argv))
@@ -318,7 +365,7 @@ def job_cancel(jid: str) -> dict:
 
 
 # ---------- HTTP ----------
-ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/news": api_news, "/api/rotation": api_rotation, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
+ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/status": api_status, "/api/news": api_news, "/api/rotation": api_rotation, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
 
 
 class Handler(BaseHTTPRequestHandler):
