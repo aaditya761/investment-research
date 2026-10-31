@@ -24,7 +24,7 @@ def _yoy(s: pd.Series):
 
 
 def quarterly(t: str):
-    import yfinance as yf
+    from ._yf import yf
 
     tk = yf.Ticker(t)
     out = {}

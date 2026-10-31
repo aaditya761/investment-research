@@ -55,3 +55,11 @@ def test_divergence_flags():
 def test_date_words_are_not_terms():
     t = nw.terms("Stocks slide on Friday October 30 as chip fears grow")
     assert not any(w in t for w in ("friday", "october", "friday october"))
+
+
+def test_importing_yfinance_through_wrapper_keeps_warnings_silenced():
+    import warnings
+
+    from themescan import _yf  # noqa: F401
+
+    assert warnings.filters[0][0] == "ignore"  # yfinance's own 'default' filter must not stay on top

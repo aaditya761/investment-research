@@ -53,7 +53,7 @@ def load_prices(
             stale.append(t)
 
     if stale:
-        import yfinance as yf
+        from ._yf import yf
 
         for i in range(0, len(stale), 40):
             chunk = stale[i : i + 40]

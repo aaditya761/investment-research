@@ -39,7 +39,7 @@ def fetch_news(queries: dict[str, str], start="20190101000000", end=None, refres
 
 def fetch_analyst_actions(tickers: list[str], refresh=False, cache_only=False) -> pd.DataFrame:
     """Dated analyst up/downgrades per stock (yfinance). Returns long frame: date, ticker, action."""
-    import yfinance as yf
+    from ._yf import yf
 
     (ALT / "analyst").mkdir(parents=True, exist_ok=True)
     frames = []
@@ -150,7 +150,7 @@ def headlines(query: str, n: int = 6, days: int = 14) -> tuple[list[dict], int]:
 
 def fetch_earnings(tickers: list[str], refresh=False, cache_only=False) -> pd.DataFrame:
     """Dated EPS estimate / reported / surprise% per stock (yfinance get_earnings_dates)."""
-    import yfinance as yf
+    from ._yf import yf
 
     (ALT / "earnings").mkdir(parents=True, exist_ok=True)
     frames = []
@@ -216,7 +216,7 @@ def snapshot(tickers: list[str], cache_hours=20) -> pd.DataFrame:
     """Live valuation / growth / estimate-revision snapshot per stock (current only, not backtestable)."""
     import time as _t
 
-    import yfinance as yf
+    from ._yf import yf
 
     f = ALT / "snapshot.csv"
     if f.exists() and (_t.time() - f.stat().st_mtime) / 3600 < cache_hours:
@@ -248,7 +248,7 @@ def fetch_calendar(tickers: list[str], cache_hours=20, days_ahead=60) -> pd.Data
     """Upcoming earnings dates (with EPS estimates) per stock. Cached for the day."""
     import time as _t
 
-    import yfinance as yf
+    from ._yf import yf
 
     f = ALT / "calendar.csv"
     if f.exists() and (_t.time() - f.stat().st_mtime) / 3600 < cache_hours:

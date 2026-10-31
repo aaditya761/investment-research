@@ -97,10 +97,10 @@ th.g{cursor:default;text-align:center;font-size:11px;letter-spacing:.4px;text-tr
 th.g1{border-bottom-color:var(--c1);color:var(--c1)}th.g2{border-bottom-color:var(--c2);color:var(--c2)}th.g3{border-bottom-color:var(--c3);color:var(--c3)}
 th.i1{box-shadow:inset 0 -3px 0 var(--c1)}th.i2{box-shadow:inset 0 -3px 0 var(--c2)}th.i3{box-shadow:inset 0 -3px 0 var(--c3)}
 button.busy{opacity:.85;cursor:progress}
-.toasts{position:fixed;top:64px;right:14px;display:flex;flex-direction:column;gap:8px;z-index:30;width:min(380px,calc(100% - 28px))}
+.toasts{position:fixed;bottom:66px;right:14px;display:flex;flex-direction:column-reverse;gap:8px;z-index:30;width:min(380px,calc(100% - 28px))}
 .toast{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--info);border-radius:8px;padding:10px 12px;box-shadow:0 6px 24px rgba(0,0,0,.18);font-size:13px;cursor:pointer}
 .toast.ok{border-left-color:var(--good)}.toast.err{border-left-color:var(--bad)}
-.dock{position:fixed;left:0;right:0;bottom:0;background:var(--code-bg);color:var(--code-ink);z-index:20;border-top:1px solid #000}
+.dock{display:none;position:fixed;left:0;right:0;bottom:0;background:var(--code-bg);color:var(--code-ink);z-index:20;border-top:1px solid #000}
 .dock .bar2{display:flex;gap:10px;align-items:center;padding:8px 14px;max-width:1400px;margin:0 auto;font-size:13px}
 .dock .bar2 .last{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#9fb0c8;font:12px ui-monospace,Menlo,monospace}
 .dock button{background:#1b2536;color:#d7e0ee;border-color:#2c3a52;padding:4px 10px}
@@ -117,6 +117,18 @@ button.busy{opacity:.85;cursor:progress}
 .bar{height:8px;border-radius:4px;background:var(--neutral-bg);position:relative;overflow:hidden}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}.bar.buy i{background:var(--good)}.bar.sell i{background:var(--bad)}
 .stack{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--neutral-bg);min-width:120px}.stack i.b{background:var(--good)}.stack i.s{background:var(--bad)}
 .flhead{display:grid;grid-template-columns:minmax(0,1.6fr) 86px 64px 56px;gap:4px 10px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+
+.result{border-left:5px solid var(--accent);margin-bottom:16px;scroll-margin-top:70px}
+.result .rh{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.result .rh h3{margin:0;flex:1;min-width:140px}
+.prog{height:4px;border-radius:2px;background:var(--neutral-bg);overflow:hidden;margin:6px 0 10px}.prog i{display:block;height:100%;width:35%;background:var(--accent);border-radius:2px;animation:ind 1.3s ease-in-out infinite}
+@keyframes ind{0%{margin-left:-35%}100%{margin-left:100%}}
+.live{color:var(--muted);font-size:13px;font-family:ui-monospace,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.report h2{font-size:17px;margin:14px 0 6px}.report h3{font-size:15px;margin:16px 0 6px;padding-top:10px;border-top:1px solid var(--line)}.report h3:first-child{border-top:0;padding-top:0;margin-top:4px}
+.report h4{font-size:13.5px;margin:14px 0 4px}.report p{margin:4px 0;color:var(--text);font-size:13.5px}.report p.ind{margin-left:14px;color:var(--muted)}.report p.cap{color:var(--muted);font-size:12.5px}
+.report ul{margin:4px 0 8px 18px;padding:0;font-size:13.5px}.report li{margin:3px 0}.report li .dt{color:var(--muted);font-size:12px;margin-right:8px;white-space:nowrap}
+.report .wrap{margin:6px 0 10px}.report table td,.report table th{padding:6px 10px}.report table th{cursor:default;position:static}.report pre.mono{background:var(--neutral-bg);color:var(--text);max-height:340px;font-size:12px}
+.report .callout{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:13px}
+.errbox{background:var(--bad-bg);color:var(--bad);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:13px;white-space:pre-wrap}
 </style>
 </head>
 <body>
@@ -237,7 +249,14 @@ button.busy{opacity:.85;cursor:progress}
 
   <!-- ================= TOOLS ================= -->
   <section class="panel" id="p-tools">
-    <div class="note" style="background:var(--info-bg);color:var(--info)">Nothing on this tab changes the Dashboard scores. The three score inputs (prices, earnings, news tone) are updated from the Dashboard. Each job's live output appears in the bar at the bottom of the page.</div>
+    <div class="note" style="background:var(--info-bg);color:var(--info)">Nothing on this tab changes the Dashboard scores. The three score inputs (prices, earnings, news tone) are updated from the Dashboard. Results of the tools below appear in a report panel at the top of this tab.</div>
+
+    <div class="card result" id="toolResult" style="display:none">
+      <div class="rh"><h3 id="trTitle"></h3><span id="trState" class="dim"></span><button id="trCancel" style="display:none">Cancel</button><button id="trClose" title="Hide result">✕</button></div>
+      <div class="prog" id="trProg" style="display:none"><i></i></div><div class="live" id="trLive"></div>
+      <div class="report" id="trBody"></div>
+      <details style="margin-top:8px"><summary class="dim" style="cursor:pointer;font-size:12.5px">Technical log (for troubleshooting)</summary><pre id="trRaw" style="margin-top:6px;max-height:300px"></pre></details>
+    </div>
 
     <div class="group"><h3>Context tools <span class="tag ctx">read alongside the score</span></h3><p>Extra evidence for understanding a theme. Most use live data, so none of it is backtested.</p></div>
     <div class="cards">
@@ -297,7 +316,7 @@ button.busy{opacity:.85;cursor:progress}
     <span class="last" id="dockLast"></span>
     <span class="jobs" id="dockJobs"></span>
     <button id="dockCancel" disabled>Cancel</button>
-    <button id="dockToggle">Show log ▴</button>
+    <button id="dockToggle">Technical log ▴</button>
   </div>
   <div class="log"><div class="cmd" id="dockCmd" style="color:#8aa0bd"></div><pre id="dockPre">Output from jobs appears here.</pre></div>
 </div>
@@ -422,6 +441,64 @@ async function scan(opts={}){
 }
 $('#scanBtn').onclick = () => scan({reason:'Manual scan'});
 
+/* ---------- turn plain command output into a readable report ---------- */
+const NUMRX = /^[-+\u2212]?\$?\d[\d,]*\.?\d*[%x\u00d7]?$|^[-+]?\.\d+%?$|^(nan|NaN|None)$/;
+const cells = l => l.trim().split(/\s{2,}/);
+function inline(t){ return esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`(.+?)`/g,'<code>$1</code>'); }
+function isTable(b){ if(b.length<2) return false; const h = cells(b[0]); if(h.length<3) return false; let ok = 0; for(const r of b.slice(1)){ const n = rowCells(r).length; if(n>=2 && Math.abs(n-h.length)<=1) ok++; } return ok >= Math.max(1,(b.length-1)*0.7); }
+function rowCells(l){
+  // label, then numbers: tolerate single-space gaps between tight (negative) numbers
+  const m = l.trim().match(/^(\S.*?)\s{2,}(\S.*)$/);
+  if(m){ const rest = m[2].trim().split(/\s+/); if(rest.length>1 && rest.every(t=>NUMRX.test(t))) return [m[1], ...rest]; }
+  const t = l.trim().split(/\s+/); if(t.length>2 && t.slice(1).every(x=>NUMRX.test(x))) return t;
+  return cells(l);
+}
+function tableHtml(b){
+  let head = cells(b[0]); const rows = b.slice(1).map(rowCells), maxc = Math.max(head.length, ...rows.map(r=>r.length));
+  if(maxc>head.length) head = ['', ...head];
+  const num = c => NUMRX.test(c);
+  const cls = c => num(c) ? ('r' + (/^[+]\d/.test(c) ? ' pos' : /^[-\u2212]\d/.test(c) ? ' neg' : '')) : 'l';
+  return '<div class="wrap"><table><thead><tr>' + head.map((h,i)=>`<th class="${i===0?'l':(rows.some(r=>num(r[i]||''))?'':'l')}">${esc(h)}</th>`).join('') + '</tr></thead><tbody>' +
+    rows.map(r=>{ while(r.length<head.length) r.push(''); return '<tr style="cursor:default">' + r.map((c,i)=>`<td class="${i===0?'l':cls(c)}">${esc(c)}</td>`).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+}
+function renderReport(lines){
+  const out = []; let block = [], fence = null;
+  const flush = () => {
+    if(!block.length) return;
+    if(isTable(block)){ out.push(tableHtml(block)); }
+    else {
+      let list = [];
+      const endList = () => { if(list.length){ out.push('<ul>'+list.join('')+'</ul>'); list = []; } };
+      for(const l of block){
+        let m;
+        if((m = l.match(/^\s{2}(\d{1,2} \w{3} \d{4})\s+(.*)$/))) list.push(`<li><span class="dt">${esc(m[1])}</span>${inline(m[2])}</li>`);
+        else if((m = l.match(/^\s*[-*] (.*)$/))) list.push(`<li>${inline(m[1])}</li>`);
+        else { endList();
+          if(/\s{3,}\S+\s{3,}\S/.test(l) && !/^\s*$/.test(l) && block.length>1 && cells(l).length>=4) { out.push(`<pre class="mono">${esc(block.join('\n'))}</pre>`); block = []; return; }
+          if(/^_.+_$/.test(l.trim())){ out.push(`<p class="cap"><i>${inline(l.trim().slice(1,-1))}</i></p>`); continue; }
+          out.push(`<p class="${/^\s{2,}/.test(l)?'ind':/^(Note|note|Caution|Reading|Evidence|Live fundamentals)/.test(l.trim())?'cap':''}">${inline(l.trim())}</p>`); }
+      }
+      endList();
+    }
+    block = [];
+  };
+  for(const raw of lines){
+    const l = raw.replace(/\s+$/,'');
+    if(l.startsWith('```')){ flush(); if(fence===null) fence = []; else { out.push(`<pre class="mono">${esc(fence.join('\n'))}</pre>`); fence = null; } continue; }
+    if(fence!==null){ fence.push(l); continue; }
+    let m;
+    if((m = l.match(/^==\s*(.+?)\s*==$/))){ flush(); out.push(`<h3>${inline(m[1])}</h3>`); }
+    else if((m = l.match(/^#{1}\s+(.*)$/))){ flush(); out.push(`<h2>${inline(m[1])}</h2>`); }
+    else if((m = l.match(/^#{2}\s+(.*)$/))){ flush(); out.push(`<h3>${inline(m[1])}</h3>`); }
+    else if((m = l.match(/^#{3,}\s+(.*)$/))){ flush(); out.push(`<h4>${inline(m[1])}</h4>`); }
+    else if(l.trim()===''){ flush(); }
+    else block.push(l);
+  }
+  if(fence!==null) out.push(`<pre class="mono">${esc(fence.join('\n'))}</pre>`);
+  flush();
+  return out.join('') || '<p class="dim">The command finished without printing anything.</p>';
+}
+
 /* ---------- jobs: spinner on the button, live bar, auto re-scan ---------- */
 const JOBS = {}; let ACTIVE = null; const TIMERS = {};
 const NODE_JOB = {prices:'prices', earnings:'earnings', news:'newstone'};
@@ -445,8 +522,7 @@ async function startJob(cmd, label, btn){
   catch(e){ toast(`<b>${esc(label)}</b> could not start: ${esc(e.message)}`, 'err'); return; }
   const job = JOBS[j.id] = {id:j.id, cmd, label, next:0, lines:[], done:false, code:null, command:j.command, elapsed:0};
   BUSY[cmd] = true; jobButtons(cmd).forEach(b=>setBusy(b, true, 'Running…')); ACTIVE = j.id;
-  // score inputs keep the log collapsed (the card shows progress); tools open it so the result is visible
-  showDock(!SCORE_JOBS.has(cmd)); renderDock(); poll(j.id);
+  if(!SCORE_JOBS.has(cmd)){ showTool(job); } renderDock(); poll(j.id);
 }
 async function poll(id){
   clearTimeout(TIMERS[id]); const job = JOBS[id]; if(!job) return;
@@ -462,16 +538,37 @@ async function finishJob(job){
     toast(`✓ <b>${esc(job.label)}</b> finished in ${job.elapsed}s`, 'ok');
     if(SCORE_JOBS.has(job.cmd)){ await refreshStatus(); await scan({reason: `${NODE_LABEL[job.cmd]} updated`}); }
     else { refreshConfig(); refreshStatus(); }
-  } else { toast(`✗ <b>${esc(job.label)}</b> failed (exit ${job.code}). Open the log for details.`, 'err'); showDock(true); }
+  } else { toast(`✗ <b>${esc(job.label)}</b> failed (exit ${job.code}). ${SCORE_JOBS.has(job.cmd) ? 'Open the technical log for details.' : 'See the report panel on the Tools tab.'}`, 'err'); if(SCORE_JOBS.has(job.cmd)) showDock(true); }
 }
-function showDock(open){ $('#dock').classList.toggle('open', open); $('#dockToggle').textContent = open ? 'Hide log ▾' : 'Show log ▴'; }
+function showTool(job){
+  TOOL = job.id; const r = $('#toolResult'); r.style.display = 'block'; $('#trTitle').textContent = job.label; $('#trBody').innerHTML = ''; $('#trRaw').textContent = '';
+  showTab('tools'); r.scrollIntoView({behavior:'smooth', block:'start'}); renderTool();
+}
+let TOOL = null;
+function renderTool(){
+  const job = JOBS[TOOL]; if(!job) return;
+  $('#trProg').style.display = job.done ? 'none' : 'block'; $('#trCancel').style.display = job.done ? 'none' : 'inline-block';
+  $('#trState').innerHTML = job.done ? (job.code===0 ? `<span class="pos">✓ done in ${job.elapsed}s</span>` : `<span class="neg">✗ failed after ${job.elapsed}s</span>`) : `<span class="spin"></span> running ${job.elapsed}s`;
+  const last = [...job.lines].reverse().find(l=>l.trim()) || (job.done ? '' : 'starting…');
+  $('#trLive').textContent = job.done ? '' : last;
+  $('#trRaw').textContent = '$ ' + job.command + '\n\n' + job.lines.join('\n');
+  if(job.done){
+    if(job.code===0){ $('#trBody').innerHTML = renderReport(job.lines); }
+    else { $('#trBody').innerHTML = `<div class="errbox"><b>This tool failed.</b> The last lines of output:\n\n${esc(job.lines.slice(-14).join('\n'))}</div>` + (job.lines.length>14 ? '' : ''); }
+  } else if(!$('#trBody').innerHTML){ $('#trBody').innerHTML = '<p class="dim">Working… the report appears here when the tool finishes. Some tools take a few minutes (downloads, backtests).</p>'; }
+}
+$('#trClose').onclick = () => { $('#toolResult').style.display = 'none'; };
+$('#trCancel').onclick = async () => { const j = JOBS[TOOL]; if(j && !j.done){ try{ await api(`/api/job/${j.id}/cancel`, {}); toast('Cancel requested', 'info'); }catch(e){ toast(esc(e.message), 'err'); } } };
+function showDock(open){ $('#dock').classList.toggle('open', open); $('#dockToggle').textContent = open ? 'Hide technical log ▾' : 'Technical log ▴'; }
 function renderDock(){
+  if(TOOL && JOBS[TOOL]) renderTool();
   const all = Object.values(JOBS), running = all.filter(j=>!j.done), job = JOBS[ACTIVE];
+  if(all.length) $('#dock').style.display = 'block';
   $('#jobsChip').style.display = running.length ? 'inline-block' : 'none'; $('#jobsChip').innerHTML = `<span class="spin" style="border-color:rgba(255,255,255,.4);border-top-color:#fff"></span> ${running.length} job${running.length===1?'':'s'} running`;
   if(!job){ return; }
   const nb = Object.entries(NODE_JOB).find(([,c])=>c===job.cmd);
   $('#dockState').innerHTML = job.done ? (job.code===0 ? `<span style="color:#58d68d">✓ ${esc(job.label)} finished (${job.elapsed}s)</span>` : `<span style="color:#ff8a80">✗ ${esc(job.label)} failed (${job.elapsed}s)</span>`) : `<span class="spin"></span> <b>${esc(job.label)}</b> running ${job.elapsed}s`;
-  const last = [...job.lines].reverse().find(l=>l.trim()) || (job.done ? '' : 'starting…'); $('#dockLast').textContent = last;
+  const last = [...job.lines].reverse().find(l=>l.trim()) || (job.done ? '' : 'starting…'); $('#dockLast').textContent = job.done ? '' : last;
   $('#dockCmd').textContent = '$ '+job.command; const pre = $('#dockPre'), atEnd = pre.scrollTop+pre.clientHeight >= pre.scrollHeight-30;
   pre.textContent = job.lines.join('\n') || (job.done ? '(no output)' : 'waiting for output…'); if(atEnd) pre.scrollTop = pre.scrollHeight;
   $('#dockCancel').disabled = job.done;
@@ -484,7 +581,9 @@ $('#dockToggle').onclick = () => showDock(!$('#dock').classList.contains('open')
 $('#jobsChip').onclick = () => showDock(true);
 $('#dockCancel').onclick = async () => { const j = JOBS[ACTIVE]; if(j && !j.done){ try{ await api(`/api/job/${j.id}/cancel`, {}); toast('Cancel requested', 'info'); }catch(e){ toast(esc(e.message), 'err'); } } };
 $$('[data-node]').forEach(b => b.onclick = () => startJob(NODE_JOB[b.dataset.node], 'Update '+{prices:'prices',earnings:'earnings',news:'news tone'}[b.dataset.node], b));
-$$('[data-job]').forEach(b => b.onclick = () => startJob(b.dataset.job, b.closest('.card').querySelector('h3').textContent.trim(), b));
+const TOOL_TITLES = {fundamentals:'Live fundamentals', headlines:'Headlines for Leading themes', clusters:'Mega-theme clusters', chains:'Demand chains', calendar:'Earnings calendar', newsarchive:'Headline archive download',
+  narratives:'News narratives', backtest:'Backtest', research:'Research', portfolio:'Portfolio backtest', log:"Forward test: log today's picks", scorelog:'Forward test: score past picks', weekly:'Weekly report'};
+$$('[data-job]').forEach(b => b.onclick = () => startJob(b.dataset.job, TOOL_TITLES[b.dataset.job] || b.textContent.trim(), b));
 
 /* ---------- drawer ---------- */
 async function openDetail(k){

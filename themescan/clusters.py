@@ -143,7 +143,7 @@ def fuel_from_frame(c: pd.DataFrame) -> dict:
 
 
 def hyperscaler_capex(tickers=("MSFT", "GOOGL", "META", "AMZN")) -> pd.DataFrame:
-    import yfinance as yf
+    from ._yf import yf
 
     cols = {}
     for t in tickers:
