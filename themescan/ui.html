@@ -190,7 +190,17 @@ button.busy{opacity:.85;cursor:progress}
   <section class="panel" id="p-rot">
     <div class="row"><b>Where is money going when AI sells off?</b><span class="tag ctx">context</span><button class="primary" id="rotBtn">Run rotation analysis</button></div>
     <p class="meta">Money flows can't be observed directly, so this infers them: which themes beat what their AI exposure explains ("residual strength"), where dollar volume is net buying, and what followed past AI selloffs. Uses cached prices (weekdays only). It does not change the Dashboard scores.</p>
-    <div id="rotErr"></div><div id="rotSummary"></div>
+    <details class="card" style="margin:0 0 12px"><summary style="cursor:pointer;font-weight:600">How to read this page (30 seconds)</summary>
+      <p style="margin-top:8px">When the AI-linked themes fall, money has to go somewhere. We can't see money moving, so we look for themes that <b>rose anyway</b>:</p>
+      <ul style="margin:0 0 8px 18px;color:var(--muted);font-size:13px;line-height:1.6">
+        <li><b>Beat AI-link by (residual)</b>: how far the theme beat the world <u>beyond</u> what its sensitivity to AI explains. Big positive = a genuine winner, not just a rising tide. <i>Main number.</i></li>
+        <li><b>Net buying</b>: −1 to +1. Positive means more dollar volume traded on up days than down days (buyers in control).</li>
+        <li><b>AI link</b>: how it moves with AI. <b>−0.6</b> means when AI falls 1% it usually rises ~0.6% (a natural hedge). Near 0 = unrelated. Positive = falls with AI.</li>
+        <li><b>After past selloffs</b>: in earlier AI selloffs, how much it beat the world over the next 60 days, and the share of times it did. Tells you whether the move tended to last.</li>
+        <li><b>Lenses passed (of 3)</b>: strong now + buyers in control + historically reliable. 3 of 3 is the strongest candidate.</li>
+      </ul>
+      <p style="margin:0">Important: this shows where money went <u>over the last 20 days</u>. Tested on 13 past selloffs, today's winners did not reliably keep winning, so treat it as a map of what is happening, not a forecast.</p></details>
+    <div id="rotErr"></div><div id="rotStory"></div><div id="rotSummary"></div>
     <h4 class="meta" style="margin-top:16px">Where it is going now</h4><div class="wrap"><table id="rotTbl"></table></div>
     <h4 class="meta" style="margin-top:16px">By asset group</h4><div class="wrap" style="max-width:640px"><table id="rotGrp"></table></div>
     <h4 class="meta" style="margin-top:16px">Safe-haven check</h4><div class="wrap" style="max-width:760px"><table id="rotCross"></table></div>
@@ -511,16 +521,32 @@ $('#newsBtn').onclick = async () => {
 /* ---------- rotation tab ---------- */
 const rpct = (v,d=1) => v==null ? '<span class="dim">–</span>' : `<span class="${v>0?'pos':v<0?'neg':''}">${(v*100).toFixed(d)}%</span>`;
 function rotRows(rows, n){
-  return '<thead><tr><th class="l">Theme</th><th class="l">Group</th><th>20d ret</th><th>Residual</th><th>Net buying</th><th>AI beta</th><th>Past edge (60d)</th><th>Past hit</th><th>Signals</th></tr></thead><tbody>' +
-   rows.slice(0,n).map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.label)}</b></td><td class="l dim">${esc(r.group)}</td><td>${rpct(r.ret)}</td><td>${rpct(r.resid)}</td><td class="${r.flow>0?'pos':'neg'}">${r.flow==null?'–':r.flow.toFixed(2)}</td><td>${r.beta==null?'–':r.beta.toFixed(2)}</td><td>${rpct(r.hist_edge)}</td><td>${r.hist_hit==null?'–':Math.round(r.hist_hit*100)+'%'}</td><td><b>${r.signals}</b>/3</td></tr>`).join('') + '</tbody>';
+  return '<thead><tr><th class="l">Theme</th><th class="l">Group</th><th title="Return over the last 20 trading days">Last 20d</th><th title="Beat the world by this much BEYOND what its AI exposure explains. Main number.">Beat AI-link by</th><th title="-1..+1: share of dollar volume on up days minus down days">Net buying</th><th title="-0.6 = usually rises ~0.6% when AI falls 1%">AI link</th><th title="Average 60-day return vs the world after past AI selloffs">After past selloffs</th><th title="Share of past selloffs where it beat the world over the next 60 days">Did it last?</th><th title="Strong now + buyers in control + historically reliable">Lenses passed</th></tr></thead><tbody>' +
+   rows.slice(0,n).map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.label)}</b></td><td class="l dim">${esc(r.group)}</td><td>${rpct(r.ret)}</td><td>${rpct(r.resid)}</td><td class="${r.flow>0?'pos':'neg'}">${r.flow==null?'–':r.flow.toFixed(2)}</td><td>${r.beta==null?'–':r.beta.toFixed(2)}</td><td>${rpct(r.hist_edge)}</td><td>${r.hist_hit==null?'–':Math.round(r.hist_hit*100)+'%'}</td><td><b>${'●'.repeat(r.signals)}${'○'.repeat(3-r.signals)}</b></td></tr>`).join('') + '</tbody>';
+}
+function rotStory(d){
+  const i = d.info, nm = r => r.label.replace(/^\[(stocks|ETFs)\]\s*/, ''), pc = (v,dg=0) => (v>0?'+':'')+(v*100).toFixed(dg)+'%';
+  const seen = new Set(), strong = []; for(const r of d.rows.filter(r=>r.signals>=2)){ const k = nm(r).toLowerCase().replace(/[^a-z]/g,'').replace(/^us/,'').slice(0,5); if(!seen.has(k)){ seen.add(k); strong.push(nm(r)); } if(strong.length>=6) break; }
+  const find = k => d.cross.find(r => r.label.toLowerCase().includes(k));
+  const t = find('long treasuries'), g = find('gold'), c = find('crypto');
+  const bits = [];
+  if(t) bits.push(`long Treasuries ${pc(t.ret)} (${t.flow>0?'buyers in control':'sellers'})`);
+  if(g) bits.push(`gold ${pc(g.ret)}`); if(c) bits.push(`crypto ${pc(c.ret)}`);
+  const grp = d.groups, best = grp.slice(0,2).map(x=>x.group), worst = grp.slice(-2).map(x=>x.group);
+  const v = i.validation[60];
+  return `<div class="card" style="border-left:5px solid var(--accent);margin-bottom:12px"><h3>In plain English</h3>
+   <p style="color:var(--text);margin-bottom:8px">AI-linked themes fell <b>${pc(i.source_return,1)}</b> over the last ${i.window} trading days (${pc(i.source_excess,1)} vs the world).</p>
+   <p style="color:var(--text);margin-bottom:8px"><b>Where money seems to be going:</b> ${strong.length ? strong.map(esc).join(', ') : 'no theme passes two or more of the three tests right now'}. By asset group the strongest are <b>${best.map(esc).join(' and ')}</b>; the weakest are <b>${worst.map(esc).join(' and ')}</b>.</p>
+   ${bits.length ? `<p style="color:var(--text);margin-bottom:8px"><b>Safe havens:</b> ${bits.join(', ')}.</p>` : ''}
+   <p style="margin:0"><b>Caution:</b> in ${i.episodes.length} past AI selloffs, the winners at this stage did not reliably keep winning (positive in ${v.resid_pos} of ${v.n} episodes, about a coin flip). This is a map of the last month, not a forecast.</p></div>`;
 }
 $('#rotBtn').onclick = async () => {
   const b = $('#rotBtn'); setBusy(b, true, 'Analysing (20-40s)…'); $('#rotErr').innerHTML='';
   try{
-    const d = await api('/api/rotation', {offline: $('#offline').checked}); const i = d.info;
+    const d = await api('/api/rotation', {offline: $('#offline').checked}); const i = d.info; $('#rotStory').innerHTML = rotStory(d);
     $('#rotSummary').innerHTML = `<div class="note" style="background:var(--info-bg);color:var(--info)">As of ${d.asof}: the AI complex is <b>${(i.source_return*100).toFixed(1)}%</b> over ${i.window} trading days (${(i.source_excess*100).toFixed(1)}% vs world) and <b>${(i.drawdown*100).toFixed(1)}%</b> below its high of ${i.high_date}.</div>`;
     $('#rotTbl').innerHTML = rotRows(d.rows, 25);
-    $('#rotGrp').innerHTML = '<thead><tr><th class="l">Group</th><th>Themes</th><th>Avg residual</th><th>Avg 20d ret</th><th>% beating AI-beta</th></tr></thead><tbody>' + d.groups.map(g=>`<tr style="cursor:default"><td class="l">${esc(g.index)}</td><td>${g.n}</td><td>${rpct(g.mean_resid)}</td><td>${rpct(g.mean_ret)}</td><td>${Math.round(g.pct_positive_resid*100)}%</td></tr>`).join('') + '</tbody>';
+    $('#rotGrp').innerHTML = '<thead><tr><th class="l">Group</th><th>Themes</th><th>Avg residual</th><th>Avg 20d ret</th><th>% beating AI-beta</th></tr></thead><tbody>' + d.groups.map(g=>`<tr style="cursor:default"><td class="l">${esc(g.group)}</td><td>${g.n}</td><td>${rpct(g.mean_resid)}</td><td>${rpct(g.mean_ret)}</td><td>${Math.round(g.pct_positive_resid*100)}%</td></tr>`).join('') + '</tbody>';
     $('#rotCross').innerHTML = rotRows(d.cross.sort((a,b)=>b.resid-a.resid), 20);
     const v=i.validation; $('#rotVal').innerHTML = `<div class="card" style="margin-top:16px"><h3>Can this predict where money goes next?</h3><p>Tested on ${i.episodes.length} past AI selloffs since 2018 (${esc(i.episodes.join(', '))}).</p><p>${[20,60].map(h=>`<b>${h} days ahead:</b> residual-strength correlation ${v[h].resid_ic.toFixed(3)} (positive in ${v[h].resid_pos}/${v[h].n} episodes); net-buying ${v[h].flow_ic.toFixed(3)} (${v[h].flow_pos}/${v[h].n})`).join('<br>')}</p><p>Values near 0 with about half the episodes positive mean today's rotation winners did <u>not</u> reliably keep winning. This shows where money is going <i>now</i>; it does not show it will continue.</p></div>`;
   }catch(e){ $('#rotErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; toast('Rotation failed: '+esc(e.message), 'err'); }
