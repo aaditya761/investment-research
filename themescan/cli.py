@@ -515,8 +515,7 @@ def cmd_newstone(args):
     print(f"done: tone available for {int(t.notna().sum())} of {len(keys)} themes")
 
 
-def main(argv=None):
-    warnings.filterwarnings("ignore")
+def build_parser():
     p = argparse.ArgumentParser(prog="themescan")
     p.add_argument("--themes", default="themes.yaml")
     p.add_argument("--demo", action="store_true", help="use synthetic prices (no network)")
@@ -619,5 +618,10 @@ def main(argv=None):
     r.add_argument("--horizon", type=int, default=63)
     r.add_argument("--blend", action="store_true", help="also test blending earnings into the score (use --themes for the matching universe)")
     r.set_defaults(fn=cmd_research)
-    args = p.parse_args(argv)
+    return p
+
+
+def main(argv=None):
+    warnings.filterwarnings("ignore")
+    args = build_parser().parse_args(argv)
     args.fn(args)

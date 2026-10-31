@@ -264,11 +264,9 @@ def build_argv(cmd: str, p: dict) -> list[str]:
     cfg = load_config(ROOT / u)
     themes = [t for t in p.get("themes", []) if t in cfg.themes]
     if cmd == "altfetch":
-        a = glob + ["altfetch"]
+        a = glob + (["--refresh"] if p.get("refresh") else []) + ["altfetch"]  # --refresh is a global option: it precedes the subcommand
         if not p.get("news"):
             a.append("--skip-news")
-        if p.get("refresh"):
-            a.append("--refresh")
         return a
     if cmd == "fundamentals":
         return glob + ["fundamentals"] + (["--theme", *themes] if themes else [])
@@ -288,7 +286,7 @@ def build_argv(cmd: str, p: dict) -> list[str]:
     if cmd == "prices":
         return glob + ["--refresh", "scan", "--no-news", "--no-fundamentals"]
     if cmd == "earnings":
-        return glob + ["altfetch", "--skip-news", "--skip-analyst"] + (["--refresh"] if p.get("refresh") else [])
+        return glob + (["--refresh"] if p.get("refresh") else []) + ["altfetch", "--skip-news", "--skip-analyst"]
     if cmd == "newstone":
         return ["newstone"]
     if cmd == "chains":
