@@ -112,6 +112,11 @@ button.busy{opacity:.85;cursor:progress}
 .group{margin:22px 0 8px}.group h3{margin:0;font-size:15px}.group p{margin:2px 0 0;color:var(--muted);font-size:13px}
 .card .tags{margin-bottom:6px}
 @media (max-width:900px){.pipe{grid-template-columns:1fr}.pipe .arrow{display:none}.pipe .col{margin-bottom:10px}}
+.flowgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.flowgrid>*{min-width:0}@media (max-width:900px){.flowgrid{grid-template-columns:1fr}}
+.fl{display:grid;grid-template-columns:minmax(0,1.6fr) 86px 64px 56px;gap:4px 10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}.fl:last-child{border-bottom:0}.fl .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fl .nm small{color:var(--muted);display:block;font-size:11px}
+.bar{height:8px;border-radius:4px;background:var(--neutral-bg);position:relative;overflow:hidden}.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}.bar.buy i{background:var(--good)}.bar.sell i{background:var(--bad)}
+.stack{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--neutral-bg);min-width:120px}.stack i.b{background:var(--good)}.stack i.s{background:var(--bad)}
+.flhead{display:grid;grid-template-columns:minmax(0,1.6fr) 86px 64px 56px;gap:4px 10px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding-bottom:4px;border-bottom:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -131,8 +136,9 @@ button.busy{opacity:.85;cursor:progress}
 <main>
   <div class="tabs">
     <button class="tab on" data-tab="dash">Dashboard</button>
+    <button class="tab" data-tab="flow">Money flow</button>
     <button class="tab" data-tab="news">News</button>
-    <button class="tab" data-tab="rot">Rotation</button>
+    <button class="tab" data-tab="rot">AI selloff</button>
     <button class="tab" data-tab="tools">Tools</button>
     <button class="tab" data-tab="help">Help</button>
   </div>
@@ -177,6 +183,28 @@ button.busy{opacity:.85;cursor:progress}
     <p class="meta" style="margin-top:10px">Click a theme for its tickers, evidence checklist, headlines and valuation. Columns with a colored underline are the three inputs above. <b>Tools</b> (context and validation) never change these scores.</p>
   </section>
 
+  <!-- ================= MONEY FLOW ================= -->
+  <section class="panel" id="p-flow">
+    <div class="row"><b>What is being bought and what is being sold, across every sector?</b><span class="tag ctx">context</span>
+      <label>Look back <select id="flowWin"><option value="5">1 week (5 days)</option><option value="20" selected>1 month (20 days)</option><option value="60">3 months (60 days)</option></select></label>
+      <button class="primary" id="flowBtn">Show money flow</button></div>
+    <p class="meta">We can't see actual fund flows, so each of 130+ themes (US sectors, countries, factors, commodities, bonds, currencies, thematic baskets) gets a <b>flow score</b> from two things we can see: how much it beat or lagged the world, and whether trading volume was mostly on up days (buying) or down days (selling). It doesn't change the Dashboard scores.</p>
+    <details class="card" style="margin:0 0 12px"><summary style="cursor:pointer;font-weight:600">How to read this page (30 seconds)</summary>
+      <ul style="margin:8px 0 8px 18px;color:var(--muted);font-size:13px;line-height:1.6">
+        <li><b>Flow score (0–100)</b> = half "return vs the world" + half "net buying" (share of dollar volume traded on up days minus down days), each ranked across all themes. 80+ strong buying, 60–80 buying, 40–60 neutral, 20–40 selling, under 20 heavy selling.</li>
+        <li><b>vs world</b>: how far it beat (+) or lagged (−) the world index over the look-back.</li>
+        <li><b>Net buying</b>: −1 to +1. Positive = buyers in control, negative = sellers.</li>
+        <li><b>Volume ×</b>: trading volume vs its usual level. Above 1.5× with a strong score = heavy participation, not a quiet drift.</li>
+        <li><b>Turning</b>: the last few days look very different from the whole window, e.g. a heavily sold theme that has started to recover, or a heavily bought one where buying is fading.</li>
+      </ul>
+      <p style="margin:0"><b>Limits:</b> India sectors are not included (different benchmark and currency). This describes what <u>already happened</u>; tested over 133 themes since 2019, a high or low flow score did <u>not</u> predict the next 20–60 days (rank-correlation about 0, sign flips between periods). Use it to see where attention and money are moving, not to time trades.</p></details>
+    <div id="flowErr"></div><div id="flowStory"></div>
+    <div class="flowgrid" id="flowLists"></div>
+    <div id="flowTurn"></div>
+    <h4 class="meta" style="margin-top:16px">By asset group</h4><div class="wrap" style="max-width:860px"><table id="flowGrp"></table></div>
+    <details style="margin-top:14px"><summary style="cursor:pointer;font-weight:600">All themes (sortable list)</summary><div class="wrap" style="margin-top:8px"><table id="flowAll"></table></div></details>
+  </section>
+
   <!-- ================= NEWS ================= -->
   <section class="panel" id="p-news">
     <div class="row"><b>What is the news saying about each theme?</b><span class="tag ctx">context</span><button class="primary" id="newsBtn">Load news dashboard</button></div>
@@ -188,7 +216,7 @@ button.busy{opacity:.85;cursor:progress}
 
   <!-- ================= ROTATION ================= -->
   <section class="panel" id="p-rot">
-    <div class="row"><b>Where is money going when AI sells off?</b><span class="tag ctx">context</span><button class="primary" id="rotBtn">Run rotation analysis</button></div>
+    <div class="row"><b>Where is money going when AI sells off?</b> <span class="dim">(for every sector, see the Money flow tab)</span><span class="tag ctx">context</span><button class="primary" id="rotBtn">Run rotation analysis</button></div>
     <p class="meta">Money flows can't be observed directly, so this infers them: which themes beat what their AI exposure explains ("residual strength"), where dollar volume is net buying, and what followed past AI selloffs. Uses cached prices (weekdays only). It does not change the Dashboard scores.</p>
     <details class="card" style="margin:0 0 12px"><summary style="cursor:pointer;font-weight:600">How to read this page (30 seconds)</summary>
       <p style="margin-top:8px">When the AI-linked themes fall, money has to go somewhere. We can't see money moving, so we look for themes that <b>rose anyway</b>:</p>
@@ -517,6 +545,42 @@ $('#newsBtn').onclick = async () => {
   catch(e){ $('#newsErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; toast('News failed: '+esc(e.message), 'err'); }
   setBusy(b, false);
 };
+
+/* ---------- money flow tab ---------- */
+let FLOW = null;
+function flowList(rows, kind){
+  const buy = kind==='buy';
+  return `<div class="card"><h3>${buy?'Being bought':'Being sold'} <span class="tag" style="background:${buy?'var(--good-bg)':'var(--bad-bg)'};color:${buy?'var(--good)':'var(--bad)'}">${buy?'money flowing in':'money flowing out'}</span></h3>
+   <div class="flhead"><span>Theme</span><span>${buy?'Buying':'Selling'} strength</span><span>vs world</span><span>Vol ×</span></div>` +
+   rows.map(r=>`<div class="fl"><div class="nm" title="${esc(r.label_name)}">${esc(r.short)}<small>${esc(r.group)}${r.turning?' · <b>'+(r.turning==='strengthening'?'turning up':'turning down')+'</b>':''}</small></div>
+     <div><div class="bar ${buy?'buy':'sell'}"><i style="width:${Math.round(buy ? r.score : 100 - r.score)}%"></i></div></div>
+     <div class="${r.excess>0?'pos':'neg'}">${(r.excess>0?'+':'')+(r.excess*100).toFixed(1)}%</div><div class="dim">${r.vol_ratio==null?'–':r.vol_ratio.toFixed(1)+'×'}</div></div>`).join('') + '</div>';
+}
+function drawFlow(){
+  const d = FLOW, rows = d.rows, win = d.window, pcs = (v,dg=0)=>(v>0?'+':'')+(v*100).toFixed(dg)+'%';
+  const dedupe = list => { const seen = new Set(), out = []; for(const r of list){ const k = r.short.toLowerCase().replace(/[^a-z]/g,'').replace(/^us/,'').slice(0,5); if(!seen.has(k)){ seen.add(k); out.push(r); } } return out; };
+  const top = rows.slice(0,15), bot = rows.slice(-15).reverse(), g = d.groups;
+  const topN = dedupe(rows).slice(0,6).map(r=>r.short), botN = dedupe([...rows].reverse()).slice(0,6).map(r=>r.short);
+  const up = rows.filter(r=>r.turning==='strengthening').sort((a,b)=>b.score_recent-a.score_recent).slice(0,8), dn = rows.filter(r=>r.turning==='weakening').sort((a,b)=>a.score_recent-b.score_recent).slice(0,8);
+  const look = {5:'week',20:'month',60:'3 months'}[win];
+  $('#flowStory').innerHTML = `<div class="card" style="border-left:5px solid var(--accent);margin-bottom:12px"><h3>In plain English · last ${look}</h3>
+   <p style="color:var(--text);margin-bottom:8px"><b>Money is flowing INTO:</b> ${topN.map(esc).join(', ')}.</p>
+   <p style="color:var(--text);margin-bottom:8px"><b>Money is flowing OUT OF:</b> ${botN.map(esc).join(', ')}.</p>
+   <p style="color:var(--text);margin-bottom:8px">By asset group, the most bought are <b>${esc(g[0].group)}</b> (${Math.round(g[0].buying*100)}% of themes buying) and <b>${esc(g[1].group)}</b>; the most sold are <b>${esc(g[g.length-1].group)}</b> (${Math.round(g[g.length-1].selling*100)}% of themes selling) and <b>${esc(g[g.length-2].group)}</b>.</p>
+   <p style="margin:0">${up.length} theme${up.length===1?'':'s'} turning up and ${dn.length} turning down (see below). This shows what already happened; it has not predicted the next 20–60 days in tests.</p></div>`;
+  $('#flowLists').innerHTML = flowList(top,'buy') + flowList(bot,'sell');
+  const tl = (list, title, note) => `<div class="card"><h3>${title}</h3><p>${note}</p>` + (list.length ? list.map(r=>`<div class="fl" style="grid-template-columns:minmax(0,1.6fr) 90px 90px 0"><div class="nm" title="${esc(r.label_name)}">${esc(r.short)}<small>${esc(r.group)}</small></div><div class="dim">${Math.round(r.score)} → ${Math.round(r.score_recent)}</div><div class="${r.excess_recent>0?'pos':'neg'}">${(r.excess_recent>0?'+':'')+(r.excess_recent*100).toFixed(1)}% recent</div><div></div></div>`).join('') : '<span class="dim">none</span>') + '</div>';
+  $('#flowTurn').innerHTML = `<div class="flowgrid">${tl(up,'Turning up','Last few days much stronger than the window (score now → recent): selling easing or buying building.')}${tl(dn,'Turning down','Last few days much weaker than the window: buying fading or selling picking up.')}</div>`;
+  $('#flowGrp').innerHTML = '<thead><tr><th class="l">Group</th><th>Themes</th><th>Avg flow score</th><th>Avg return</th><th class="l">Buying vs selling</th></tr></thead><tbody>' + g.map(x=>`<tr style="cursor:default"><td class="l">${esc(x.group)}</td><td>${x.n}</td><td><b>${Math.round(x.mean_score)}</b></td><td>${rpct(x.mean_ret,1)}</td><td class="l"><div class="stack" title="${Math.round(x.buying*100)}% buying · ${Math.round(x.selling*100)}% selling"><i class="b" style="width:${x.buying*100}%"></i><i style="width:${(1-x.buying-x.selling)*100}%"></i><i class="s" style="width:${x.selling*100}%"></i></div></td></tr>`).join('') + '</tbody>';
+  $('#flowAll').innerHTML = '<thead><tr><th class="l">Theme</th><th class="l">Group</th><th>Flow score</th><th>Label</th><th>Return</th><th>vs world</th><th>Net buying</th><th>Vol ×</th><th class="l">Turning</th></tr></thead><tbody>' + rows.map(r=>`<tr style="cursor:default"><td class="l"><b>${esc(r.label_name)}</b></td><td class="l dim">${esc(r.group)}</td><td>${Math.round(r.score)}</td><td class="l">${esc(r.label)}</td><td>${rpct(r.ret,1)}</td><td>${rpct(r.excess,1)}</td><td class="${r.flow>0?'pos':'neg'}">${r.flow.toFixed(2)}</td><td>${r.vol_ratio==null?'–':r.vol_ratio.toFixed(2)}</td><td class="l">${r.turning==='strengthening'?'▲ up':r.turning==='weakening'?'▼ down':''}</td></tr>`).join('') + '</tbody>';
+}
+async function loadFlow(){
+  const b = $('#flowBtn'); setBusy(b, true, 'Reading prices & volume…'); $('#flowErr').innerHTML='';
+  try{ FLOW = await api('/api/flows', {offline:$('#offline').checked, window:+$('#flowWin').value}); drawFlow(); }
+  catch(e){ $('#flowErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; toast('Money flow failed: '+esc(e.message), 'err'); }
+  setBusy(b, false);
+}
+$('#flowBtn').onclick = loadFlow; $('#flowWin').onchange = loadFlow;
 
 /* ---------- rotation tab ---------- */
 const rpct = (v,d=1) => v==null ? '<span class="dim">–</span>' : `<span class="${v>0?'pos':v<0?'neg':''}">${(v*100).toFixed(d)}%</span>`;

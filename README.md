@@ -128,6 +128,15 @@ Retrospective on AI: the first alert (>= 4 members, >= 60% in the top quartile, 
 memory / power / Taiwan-Korea legs had made most of their moves. Tests 2020-2026: participating members of hot clusters beat other themes by about +2-3% per 6 months in both train and test
 periods; a "laggard catch-up" gap signal did **not** work out of sample. So it explains the trade and shows who is participating; it does not reliably name the next leg.
 
+## Money flow: what is being bought and sold across ALL sectors
+
+    python -m themescan flows [--window 5|20|60] [--top 15]        (UI: Money flow tab)
+
+Covers 130+ themes (US sectors, countries, factors, commodities, bonds, currencies, thematic baskets). Each gets a **flow score** (0-100): half its return vs the world over the look-back, half net-buying pressure
+(share of dollar volume traded on up days minus down days). Shows what is being bought, what is being sold, what is turning (last days very different from the window) and a by-asset-group view. Weekday prices only; India
+sectors are not included (different benchmark and currency). **Tested over 133 themes since 2019: the score did not predict the next 20-60 days** (rank-correlation about 0, sign flips between periods), so it
+describes what already happened. It is not used in the Dashboard score.
+
 ## Rotation: where does money go when a complex sells off?
 
     python -m themescan rotation                      # default source = the AI complex (AI semis, memory, Taiwan, Korea, hyperscalers, power, cloud, China internet...)

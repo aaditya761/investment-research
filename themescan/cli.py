@@ -515,6 +515,40 @@ def cmd_newstone(args):
     print(f"done: tone available for {int(t.notna().sum())} of {len(keys)} themes")
 
 
+def cmd_flows(args):
+    from . import rotation as ro
+
+    cfgs = {"g": load_config("themes.yaml"), "b": load_config("themes_broad.yaml")}
+    tick = sorted(set(cfgs["g"].all_tickers) | set(cfgs["b"].all_tickers))
+    close, vol, _ = load_prices(tick, start="2018-01-01", cache_dir=args.cache, refresh=args.refresh, offline=args.offline)
+    close, vol = ro.weekdays(close, vol)
+    themes = ro.merge_universes(cfgs)
+    df = ro.flow_map(close, vol, themes, "ACWI", window=args.window, recent=args.recent)
+    nm = lambda k: ro.label(k, themes)
+    print(f"As of {close.index[-1].date()} | {len(df)} themes | window {args.window} trading days (turning = last {args.recent} days)\n")
+    print("score 0-100 = half return vs the world, half net-buying pressure (up-day minus down-day dollar volume). >=80 strong buying, 60-80 buying, 40-60 neutral, 20-40 selling, <20 heavy selling.\n")
+
+    def show(d, title):
+        print(f"== {title} ==")
+        t = pd.DataFrame({"theme": [nm(k) for k in d.index], "group": d.group.values, "score": d.score.round(0).values, f"{args.window}d%": (d.ret * 100).round(1).values,
+                          "vs world%": (d.excess * 100).round(1).values, "net buying": d.flow.round(2).values, "vol x": d.vol_ratio.round(2).values, "turning": d.turning.values})
+        print(t.to_string(index=False))
+        print()
+
+    show(df.head(args.top), f"BEING BOUGHT (top {args.top})")
+    show(df.tail(args.top).iloc[::-1], f"BEING SOLD (bottom {args.top})")
+    up = df[df.turning == "strengthening"].sort_values("score_recent", ascending=False).head(8)
+    dn = df[df.turning == "weakening"].sort_values("score_recent").head(8)
+    if len(up):
+        show(up, "TURNING UP (last days much stronger than the window: selling easing or buying building)")
+    if len(dn):
+        show(dn, "TURNING DOWN (last days much weaker than the window: buying fading)")
+    g = ro.flow_groups(df)
+    print("== BY ASSET GROUP ==")
+    print(pd.DataFrame({"themes": g.n, "avg score": g.mean_score.round(0), "avg ret%": (g.mean_ret * 100).round(1), "% buying": (g.buying * 100).round(0), "% selling": (g.selling * 100).round(0)}).to_string())
+    print("\nCaution: tested over 133 themes since 2019, this buying/selling score did NOT predict the next 20-60 days (rank-correlation about 0, sign flips between periods). Use it to see what is happening, not to time entries.")
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="themescan")
     p.add_argument("--themes", default="themes.yaml")
@@ -545,6 +579,11 @@ def build_parser():
     u.add_argument("--port", type=int, default=8765)
     u.add_argument("--no-browser", action="store_true")
     u.set_defaults(fn=cmd_ui)
+    fl = sub.add_parser("flows", help="what is being bought and sold across ALL themes (price + volume proxy)")
+    fl.add_argument("--window", type=int, default=20, help="trading days (e.g. 5, 20, 60)")
+    fl.add_argument("--recent", type=int, default=5)
+    fl.add_argument("--top", type=int, default=15)
+    fl.set_defaults(fn=cmd_flows)
     ro_ = sub.add_parser("rotation", help="where is money going when a complex (default: AI) sells off?")
     ro_.add_argument("--source", nargs="+", help="source theme keys, e.g. g:ai_semis g:memory b:semis (default: the AI complex)")
     ro_.add_argument("--window", type=int, default=20, help="trading days for the current-rotation lens")

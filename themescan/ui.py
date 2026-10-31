@@ -164,6 +164,28 @@ def api_status(p):
 
 _ROT: dict = {}
 _NEWS: dict = {}
+_FLOW: dict = {}
+
+
+def api_flows(p):
+    window = int(p.get("window", 20))
+    if window not in (5, 20, 60):
+        raise ValueError("window must be 5, 20 or 60")
+    key = (bool(p.get("offline")), window)
+    hit = _FLOW.get(key)
+    if hit and time.time() - hit[0] < 600:
+        return hit[1]
+    cfgs = {"g": load_config(ROOT / "themes.yaml"), "b": load_config(ROOT / "themes_broad.yaml")}
+    close, vol, _ = load_prices(sorted(set(cfgs["g"].all_tickers) | set(cfgs["b"].all_tickers)), start="2018-01-01", cache_dir=ROOT / "data/cache", offline=key[0])
+    close, vol = rotation.weekdays(close, vol)
+    themes = rotation.merge_universes(cfgs)
+    df = rotation.flow_map(close, vol, themes, "ACWI", window=window, recent=max(3, window // 4))
+    df["label_name"] = [rotation.label(k, themes) for k in df.index]
+    df["short"] = [rotation.label(k, themes).split("] ", 1)[-1] for k in df.index]
+    cols = ["label_name", "short", "group", "score", "score_recent", "label", "turning", "ret", "excess", "excess_recent", "flow", "flow_recent", "vol_ratio", "n"]
+    res = dict(asof=str(close.index[-1].date()), window=window, rows=_records(df[cols]), groups=_records(rotation.flow_groups(df)))
+    _FLOW[key] = (time.time(), res)
+    return res
 AI_RX = r"\b(ai|a\.i\.|artificial intelligence|generative|chatgpt|openai|llm|data cent(er|re)s?|hbm|gpu)\b"
 
 
@@ -342,7 +364,7 @@ def start_job(cmd: str, p: dict) -> dict:
             job["lines"].append(line.rstrip("\n"))
         job["code"] = proc.wait()
         job["done"] = True
-        _PANELS.clear(); _NEWS.clear(); _ROT.clear()  # data on disk changed: next scan must re-read it
+        _PANELS.clear(); _NEWS.clear(); _ROT.clear(); _FLOW.clear()  # data on disk changed: next scan must re-read it
 
     threading.Thread(target=run, daemon=True).start()
     return dict(id=jid, command="python -m themescan " + " ".join(argv))
@@ -363,7 +385,7 @@ def job_cancel(jid: str) -> dict:
 
 
 # ---------- HTTP ----------
-ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/status": api_status, "/api/news": api_news, "/api/rotation": api_rotation, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
+ROUTES = {"/api/config": api_config, "/api/scan": api_scan, "/api/flows": api_flows, "/api/status": api_status, "/api/news": api_news, "/api/rotation": api_rotation, "/api/verify": api_verify, "/api/detail": api_detail, "/api/headlines": api_headlines, "/api/fundamentals": api_fundamentals}
 
 
 class Handler(BaseHTTPRequestHandler):

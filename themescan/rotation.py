@@ -38,12 +38,12 @@ def merge_universes(cfgs: dict) -> dict:
     return out
 
 
-def theme_returns(close: pd.DataFrame, themes: dict) -> pd.DataFrame:
+def theme_returns(close: pd.DataFrame, themes: dict, min_tickers: int = 2) -> pd.DataFrame:
     r = close.pct_change(fill_method=None)
     cols = {}
     for k, th in themes.items():
         c = [t for t in th.tickers if t in r]
-        if len(c) >= 2:
+        if len(c) >= min_tickers:
             s = r[c].median(axis=1)
             cols[k] = s.where(r[c].notna().sum(axis=1) >= min(2, len(c)))
     return pd.DataFrame(cols)
@@ -183,5 +183,66 @@ def analyze(close, vol, themes, bench="ACWI", source=AI_SOURCE, drop=-0.10, wind
     return dict(info=info, table=table, groups=groups)
 
 
+_FIX = {"Us": "US", "Uk": "UK", "Ev": "EV", "Em": "EM", "Ai": "AI", "Reits": "REITs", "Tips": "TIPS", "Intl": "Intl", "Dev": "Dev", "Ark": "ARK", "Saudi": "Saudi", "Comm": "Comm", "Batt": "Batt"}
+
+
+def pretty(label: str) -> str:
+    return " ".join(_FIX.get(w, w) for w in label.split(" "))
+
+
 def label(key: str, themes: dict) -> str:
-    return ("[stocks] " if key.startswith("g:") else "[ETFs] ") + themes[key].label if key in themes else key
+    return ("[stocks] " if key.startswith("g:") else "[ETFs] ") + pretty(themes[key].label) if key in themes else key
+
+
+# ---------------- all-sector money-flow map ----------------
+LABELS = ["Heavy selling", "Selling", "Neutral", "Buying", "Strong buying"]
+
+
+def flow_map(close, vol, themes: dict, bench="ACWI", window=20, recent=5):
+    """Every theme (not just a chosen source): is money going in or out over the last `window` trading days?
+
+    score = 50% rank of return vs the world + 50% rank of net-buying pressure (share of dollar volume on up days minus down days).
+    `score_recent` is the same over the last `recent` days; a big gap flags a theme that is turning. Price/volume proxies only:
+    actual fund flows are not observable here, and tested over 133 themes since 2019 the score did NOT predict the next 20-60 days.
+    """
+    R = theme_returns(close, themes, min_tickers=1)
+    B = close[bench].pct_change()
+    dv = close * vol.reindex(close.index)
+    sign = np.sign(close.diff())
+    ok = [t for t in close.columns if (vol[t].tail(250) > 0).mean() > 0.8]
+
+    def cum(r, n):
+        return float(np.expm1(np.log1p(r.tail(n).fillna(0)).sum()))
+
+    def flow(cols, n):
+        num = (sign[cols].tail(n) * dv[cols].tail(n)).sum()
+        den = dv[cols].tail(n).sum()
+        return float((num / den).median())
+
+    rows = {}
+    for k, th in themes.items():
+        if k not in R:
+            continue
+        cols = [t for t in th.tickers if t in ok]
+        if not cols:
+            continue
+        rows[k] = dict(
+            group=_GROUP_OF.get(k, "Thematic baskets (stocks)" if k.startswith("g:") else "Other ETFs"),
+            ret=cum(R[k], window), excess=cum(R[k], window) - cum(B, window), excess_recent=cum(R[k], recent) - cum(B, recent),
+            flow=flow(cols, window), flow_recent=flow(cols, recent),
+            vol_ratio=float((dv[cols].tail(window).mean() / dv[cols].tail(250).mean()).median()), n=len(cols),
+        )
+    df = pd.DataFrame.from_dict(rows, orient="index")
+    rk = lambda c: df[c].rank(pct=True)
+    df["score"] = 100 * (0.5 * rk("excess") + 0.5 * rk("flow"))
+    df["score_recent"] = 100 * (0.5 * rk("excess_recent") + 0.5 * rk("flow_recent"))
+    df["label"] = pd.cut(df.score, [-1, 20, 40, 60, 80, 101], labels=LABELS).astype(str)
+    gap = df.score_recent - df.score
+    df["turning"] = np.where(gap >= 30, "strengthening", np.where(gap <= -30, "weakening", ""))
+    return df.sort_values("score", ascending=False)
+
+
+def flow_groups(df: pd.DataFrame) -> pd.DataFrame:
+    g = df.groupby("group").agg(n=("score", "size"), mean_score=("score", "mean"), mean_ret=("ret", "mean"),
+                                buying=("score", lambda s: (s >= 60).mean()), selling=("score", lambda s: (s < 40).mean()))
+    return g.sort_values("mean_score", ascending=False)
