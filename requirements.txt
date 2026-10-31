@@ -1,6 +1,7 @@
-pandas
+pandas>=2.2
 numpy
 pyyaml
+requests
 yfinance
-pytest
 scipy
+pytest

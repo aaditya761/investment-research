@@ -12,6 +12,26 @@ use the filter pills (Leading / Confirmed / Improving / Lagging), and click a th
 snapshot. *Data & jobs* tab has a button for each long-running command (download data, fundamentals, headlines, backtest, research)
 with a live console. It runs on your machine only (bound to 127.0.0.1, no extra dependencies).
 
+## Quickstart (local)
+
+Needs Python 3.10+ (3.11+ recommended) and internet access (Yahoo Finance, Google News, FRED). No API keys.
+
+    git clone -b claude/epic-volta-ksrkce https://github.com/aaditya761/investment-research.git
+    cd investment-research
+    python3 -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\activate
+    pip install -r requirements.txt
+    python -m themescan ui                                    # opens http://127.0.0.1:8765
+
+Run everything from the repo root (config files and the `data/` cache use relative paths). First time in the UI:
+1. **Scan** (downloads prices, about 1-2 minutes, then cached).
+2. **Data & jobs > Download data** (earnings history; needed for the earnings half of conviction), then **Scan** again.
+3. Optional: **Download headline archive** (about 45 minutes, resumable) to enable the News tab's narrative radar.
+4. Every week: **Weekly report** (or `python -m themescan weekly`), then commit `logs/forward_log.csv`.
+
+Schedule the weekly run (Mac/Linux cron, Fridays after the US close, adjust the path):
+
+    30 22 * * 5  cd /path/to/investment-research && .venv/bin/python -m themescan weekly >> reports/cron.log 2>&1
+
 ## Commands (CLI equivalents)
 
 Global options go **before** the subcommand: `--themes FILE`, `--demo`, `--offline`, `--refresh`, `--start DATE`, `--cache DIR`, `--csv OUT`.
