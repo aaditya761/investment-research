@@ -376,7 +376,16 @@ function renderStatus(){
   $('#btn-news').disabled = n.need===0 || demo || !!BUSY.newstone; $('#btn-prices').disabled = demo || !!BUSY.prices; $('#btn-earnings').disabled = demo || !!BUSY.earnings;
   $('#pipehint').textContent = demo ? 'Demo data is on: the scan uses synthetic prices and the Update buttons are disabled.' : '';
 }
-$('#demo').onchange = renderStatus; $('#universe').onchange = () => { refreshStatus(); };
+function resetResults(){
+  ROWS = []; PREV = null; DELTA = {}; CHANGED = new Set(); FILTER = 'all';
+  $('#tbl tbody').innerHTML = ''; $('#filters').innerHTML = ''; $('#banner').innerHTML = ''; $('#scanNote').innerHTML = ''; $('#scanErr').innerHTML = '';
+  $('#verdicts').innerHTML = '<span class="dim">scanning…</span>'; $('#drawer').classList.remove('on');
+}
+let SCAN_TIMER = null;
+function rescanSoon(reason){ clearTimeout(SCAN_TIMER); SCAN_TIMER = setTimeout(() => scan({reason, fresh:true}), 250); }
+$('#universe').onchange = () => { resetResults(); $('#scanMeta').innerHTML = `Loading <b>${esc($('#universe').value.replace('.yaml',''))}</b>…`; refreshStatus(); rescanSoon('Universe changed'); };
+$('#demo').onchange = () => { renderStatus(); resetResults(); rescanSoon('Data source changed'); };
+$('#asof').onchange = () => { PREV = null; rescanSoon('Date changed'); };
 
 /* ---------- scan table ---------- */
 const COLS = [
@@ -426,18 +435,23 @@ function showBanner(reason, prev, now){
   if(!vc.length && !mv.length){ $('#banner').innerHTML = ''; toast(`<b>${esc(reason)}</b>: re-scanned, no theme changed verdict or moved 3+ points.`, 'ok'); return; }
   $('#banner').innerHTML = `<div class="banner"><div class="body"><b>↻ ${esc(reason)}</b>: ${vc.length} verdict change${vc.length===1?'':'s'}, ${moves.length} other theme${moves.length===1?'':'s'} moved 3+ points.${vc.length?'<div class="chgs">'+vc.join('')+'</div>':''}${mv.length?'<div class="chgs">'+mv.join('')+'</div>':''}</div><button class="x2" onclick="document.getElementById(\'banner\').innerHTML=\'\'">✕</button></div>`;
 }
+let SCANNING = false, SCAN_AGAIN = null;
 async function scan(opts={}){
+  if(SCANNING){ SCAN_AGAIN = opts; return; }   // a change arrived mid-scan: run once more with the latest settings when this one ends
+  SCANNING = true; const uni = $('#universe').value;
   const btn = $('#scanBtn'); setBusy(btn, true, 'Scanning…'); $('#scanErr').innerHTML=''; $('#scanNote').innerHTML='';
   try{
     const d = await api('/api/scan', params());
+    if(uni !== $('#universe').value){ SCANNING = false; setBusy(btn, false); const o = SCAN_AGAIN || {reason:'Universe changed'}; SCAN_AGAIN = null; return scan(o); }  // user switched universe while this was loading: drop the stale result
     const prev = PREV, hadRows = ROWS.length>0;
     PREV = Object.fromEntries(d.rows.map(r=>[r.index, {conviction:r.conviction, verdict:r.verdict}])); ROWS = d.rows;
-    $('#scanMeta').textContent = `As of ${d.asof} · benchmark ${d.benchmark} · ${ROWS.length} themes` + (d.missing.length ? ` · no data for ${d.missing.length} tickers (${d.missing.slice(0,8).join(', ')}${d.missing.length>8?'…':''})` : '');
+    $('#scanMeta').innerHTML = `<b>${esc(uni.replace('.yaml',''))}</b> · as of ${esc(d.asof)} · benchmark ${esc(d.benchmark)} · ${ROWS.length} themes` + (d.missing.length ? ` · no data for ${d.missing.length} tickers (${d.missing.slice(0,8).join(', ')}${d.missing.length>8?'…':''})` : '');
     if(d.note) $('#scanNote').innerHTML = `<div class="note">${esc(d.note)}</div>`;
     if(prev && hadRows) showBanner(opts.reason || 'Since the last scan', prev, ROWS); else { DELTA = {}; CHANGED = new Set(); }
     renderFilters(); renderRows(); refreshStatus();
-  }catch(e){ $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; toast('Scan failed: '+esc(e.message), 'err'); }
-  setBusy(btn, false);
+  }catch(e){ $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; toast('Scan failed: '+esc(e.message), 'err'); $('#verdicts').innerHTML = '<span class="dim">scan failed</span>'; }
+  setBusy(btn, false); SCANNING = false;
+  if(SCAN_AGAIN){ const o = SCAN_AGAIN; SCAN_AGAIN = null; scan(o); }
 }
 $('#scanBtn').onclick = () => scan({reason:'Manual scan'});
 
@@ -725,7 +739,7 @@ async function refreshConfig(){
   $('#j-hist').innerHTML = opts || '<option value="">(run a backtest first)</option>'; $('#j-hist2').innerHTML = opts || '<option value="">(run a backtest first)</option>';
   $('#j-val').innerHTML = '<option value="">(none)</option>' + opts;
 }
-refreshConfig().then(refreshStatus).catch(e => { $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; });
+refreshConfig().then(refreshStatus).then(() => { if(!ROWS.length) scan({reason:'First scan'}); }).catch(e => { $('#scanErr').innerHTML = `<div class="err">${esc(e.message)}</div>`; });
 </script>
 </body>
 </html>
